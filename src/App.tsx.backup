@@ -6,7 +6,7 @@ import {
   FileText, TrendingUp, TrendingDown, DollarSign, Clock, CheckCircle2,
   XCircle, AlertCircle, ChevronRight, Download, Upload, MessageCircle, Moon, Sun,
   Calculator, Printer, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Filter,
-  Calendar, MapPin, Weight, ShoppingCart, CreditCard, Wallet, Chrome, Database, Languages
+  Calendar, MapPin, Weight, ShoppingCart, CreditCard, Wallet, Globe, Chrome, Database
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { Button } from './components/ui/button';
@@ -29,7 +29,7 @@ import {
 import * as store from './store';
 import { migrateLocalStorageToFirestore } from './lib/migration';
 import { auth, googleProvider } from './lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile } from 'firebase/auth';
 
 interface Customer { id: string; name: string; phone: string; city: string; address: string; notes: string; totalRemaining: number; totalPaid: number; lastPaymentDate: string | null; createdAt: string; }
 interface StockRecord { id: string; customerId: string; customer?: { name: string; phone: string }; date: string; itemName: string; itemCategory: string; weight: number; weightUnit: string; pricePerUnit: number; totalAmount: number; paidAmount: number; remainingAmount: number; notes: string; createdAt: string; }
@@ -52,7 +52,6 @@ type Lang = 'en' | 'ur';
 const tr: Record<string, Record<Lang, string>> = {
   dashboard:{en:'Dashboard',ur:'ڈیش بورڈ'},customers:{en:'Customers',ur:'گاہک'},stockSent:{en:'Sales',ur:'سٹاک بھیجا'},purchases:{en:'Purchases',ur:'خریداری'},wasooli:{en:'Wasooli',ur:'وصولی'},bankRecords:{en:'Bank Records',ur:'بینک ریکارڈ'},expenses:{en:'Expenses',ur:'اخراجات'},invoices:{en:'Invoices',ur:'انوائس'},search:{en:'Search',ur:'تلاش'},settings:{en:'Settings',ur:'سیٹنگز'},name:{en:'Name',ur:'نام'},phone:{en:'Phone',ur:'فون'},city:{en:'City',ur:'شہر'},address:{en:'Address',ur:'پتہ'},notes:{en:'Notes',ur:'نوٹ'},amount:{en:'Amount',ur:'رقم'},date:{en:'Date',ur:'تاریخ'},itemName:{en:'Item Name',ur:'آئٹم کا نام'},category:{en:'Category',ur:'قسم'},weight:{en:'Weight',ur:'وزن'},price:{en:'Price',ur:'قیمت'},total:{en:'Total',ur:'کل'},remaining:{en:'Remaining',ur:'باقی'},description:{en:'Description',ur:'تفصیل'},add:{en:'Add',ur:'شامل کریں'},edit:{en:'Edit',ur:'ترمیم'},delete:{en:'Delete',ur:'حذف'},save:{en:'Save',ur:'محفوظ کریں'},cancel:{en:'Cancel',ur:'منسوخ'},all:{en:'All',ur:'سب'},login:{en:'Login',ur:'لاگ ان'},signUp:{en:'Sign Up',ur:'سائن اپ'},logout:{en:'Logout',ur:'لاگ آؤٹ'},createAccount:{en:'Create Account',ur:'اکاؤنٹ بنائیں'},calculator:{en:'Calculator',ur:'کیلکولیٹر'},printLabel:{en:'Print / PDF',ur:'پرنٹ'},language:{en:'Language',ur:'زبان'},supplierName:{en:'Supplier Name',ur:'فراہم کنده'},customer:{en:'Customer',ur:'گاہک'},supplier:{en:'Supplier',ur:'فراہم کنده'},invoice:{en:'Invoice',ur:'انوائس'},invoiceNumber:{en:'Invoice Number',ur:'انوائس نمبر'},type:{en:'Type',ur:'قسم'},sale:{en:'Sale',ur:'فروخت'},purchase:{en:'Purchase',ur:'خریداری'},status:{en:'Status',ur:'حیثیت'},partial:{en:'Thora Udhar (Half Paid)',ur:'تھوڑا ادھار'},unpaid:{en:'Mukammal Udhar (Not Paid)',ur:'مکمل ادھار'},viewInvoice:{en:'View Invoice',ur:'انوائس دیکھیں'},totalStockValue:{en:'Total Sales Value',ur:'کل سٹاک ویلیو'},totalReceived:{en:'Total Received',ur:'کل وصولی'},remainingMoney:{en:'Remaining Money',ur:'باقی رقم'},todayWasooli:{en:'Today Wasooli',ur:'آج کی وصولی'},thisMonth:{en:'This Month',ur:'اس مہینے'},totalCustomers:{en:'Total Customers',ur:'کل گاہک'},totalPurchases:{en:'Total Purchases',ur:'کل خریداری'},notPaid:{en:'Mukammal Udhar (Not Paid)',ur:'مکمل ادھار'},halfPaid:{en:'Thora Udhar (Half Paid)',ur:'تھوڑا ادھار'},paid:{en:'Clear (Full Paid)',ur:'مکمل ادا'},paymentMethod:{en:'Payment Method',ur:'ادائیگی کا طریقہ'},bankName:{en:'Bank Name',ur:'بینک کا نام'},transactionNote:{en:'Transaction Note',ur:'ٹرانزیکشن نوٹ'},accountType:{en:'Account Type',ur:'اکاؤنٹ کی قسم'},darkMode:{en:'Dark Mode',ur:'ڈارک موڈ'},yourAccount:{en:'Your Account',ur:'آپ کا اکاؤنٹ'},currency:{en:'Currency',ur:'کرنسی'},dataBackup:{en:'Data Backup',ur:'ڈیٹا بیک اپ'},downloadBackup:{en:'Download Backup (JSON)',ur:'بیک اپ ڈاؤنلوڈ کریں'},email:{en:'Email',ur:'ای میل'},password:{en:'Password',ur:'پاس ورڈ'},yourName:{en:'Your Name',ur:'آپ کا نام'},phoneNumber:{en:'Phone Number',ur:'فون نمبر'},enterPassword:{en:'Enter password',ur:'پاس ورڈ درج کریں'},createPassword:{en:'Create password',ur:'پاس ورڈ بنائیں'},welcome:{en:'Welcome!',ur:'خوش آمدید!'},loginFailed:{en:'Login Failed',ur:'لاگ ان ناکام'},wrongEmailPassword:{en:'Wrong email or password',ur:'غلط ای میل یا پاس ورڈ'},error:{en:'Error',ur:'خطا'},accountCreated:{en:'Account Created!',ur:'اکاؤنٹ بن گیا!'},pleaseLoginNow:{en:'Please login now.',ur:'براہ کرم لاگ ان کریں۔'},signupFailed:{en:'Signup Failed',ur:'سائن اپ ناکام'},tryAgain:{en:'Try again',ur:'دوبارہ کوشش کریں'},loggedOut:{en:'Logged Out',ur:'لاگ آؤٹ'},seeYouNextTime:{en:'See you next time!',ur:'پھر ملتے ہیں!'},updated:{en:'Updated!',ur:'اپ ڈیٹ ہو گیا!'},added:{en:'Added!',ur:'شامل کر دیا گیا!'},deleted:{en:'Deleted',ur:'حذف ہو گیا'},failedToSave:{en:'Failed to save',ur:'محفوظ نہیں ہو سکا'},failedToDelete:{en:'Failed to delete',ur:'حذف نہیں ہو سکا'},nameAndPhoneRequired:{en:'Name and Phone are required',ur:'نام اور فون ضروری ہیں'},customerUpdated:{en:'Customer updated successfully',ur:'گاہک اپ ڈیٹ ہوا'},newCustomerAdded:{en:'New customer added',ur:'نیا گاہک شامل کر دیا گیا'},customerDeleted:{en:'Customer deleted',ur:'گاہک حذف ہو گیا'},deleteCustomerConfirm:{en:'Delete this customer and all records?',ur:'کیا آپ اس گاہک کو حذف کرنا چاہتے ہیں؟'},customerAndItemRequired:{en:'Customer and Item Name are required',ur:'گاہک اور آئٹم کا نام ضروری ہیں'},stockRecordAdded:{en:'Sale record added',ur:'سٹاک ریکارڈ شامل کر دیا گیا'},stockRecordUpdated:{en:'Sale record updated',ur:'سٹاک ریکارڈ اپ ڈیٹ ہو گیا'},stockRecordDeleted:{en:'Sale record deleted',ur:'سٹاک ریکارڈ حذف ہو گیا'},deleteStockConfirm:{en:'Delete this sale?',ur:'کیا اس سٹاک ریکارڈ کو حذف کریں؟'},customerAndAmountRequired:{en:'Customer and Amount are required',ur:'گاہک اور رقم ضروری ہیں'},paymentAdded:{en:'Payment Added!',ur:'وصولی شامل کر دی گئی!'},received:{en:'received',ur:'وصول ہئی'},paymentDeleted:{en:'Payment deleted',ur:'وصولی حذف ہو گئی'},deletePaymentConfirm:{en:'Delete this payment?',ur:'کیا اس وصولی کو حذف کریں؟'},amountRequired:{en:'Amount is required',ur:'رقم ضروری ہے'},bankPaymentAdded:{en:'Bank Payment Added!',ur:'بینک ادائیگی شامل کر دی گئی!'},recorded:{en:'recorded',ur:'ریکارڈ ہوا گیا'},bankPaymentDeleted:{en:'Bank payment deleted',ur:'بینک ادائیگی حذف ہو گئی'},deleteBankPaymentConfirm:{en:'Delete this bank payment?',ur:'کیا اس بینک ادائیگی کو حذف کریں؟'},descriptionAndAmountRequired:{en:'Description and Amount are required',ur:'تفصیل اور رقم ضروری ہیں'},expenseAdded:{en:'Expense Added!',ur:'اخراجات شامل کر دی گئی!'},expenseDeleted:{en:'Expense deleted',ur:'اخراجات حذف ہو گئیں'},deleteExpenseConfirm:{en:'Delete this expense?',ur:'کیا اس اخراجات کو حذف کریں؟'},searchCustomers:{en:'Search customers...',ur:'گاہک تلاش کریں...'},searchStock:{en:'Search sales...',ur:'سٹاک تلاش کریں...'},searchPurchases:{en:'Search purchases...',ur:'خریداری تلاش کریں...'},searchAnything:{en:'Search anything...',ur:'کچھ بھی تلاش کریں...'},addCustomer:{en:'Add Customer',ur:'گاہک شامل کریں'},addStock:{en:'Add Sale',ur:'سٹاک شامل کریں'},addPayment:{en:'Add Payment',ur:'وصولی شامل کریں'},addBankPayment:{en:'Add Bank Payment',ur:'بینک ادائیگی شامل کریں'},addExpense:{en:'Add Expense',ur:'اخراجات شامل کریں'},addPurchase:{en:'Add Purchase',ur:'خریداری شامل کریں'},editCustomer:{en:'Edit Customer',ur:'گاہک ترمیم'},addNewCustomer:{en:'Add New Customer',ur:'نیا گاہک شامل کریں'},editStockRecord:{en:'Edit Sale',ur:'سٹاک ریکارڈ ترمیم'},sendStockToCustomer:{en:'Create Sale',ur:'گاہک کو سٹاک بھیجیں'},editPayment:{en:'Edit Payment',ur:'وصولی ترمیم'},addPaymentWasooli:{en:'Add Payment (Wasooli)',ur:'وصولی شامل کریں'},editBankPayment:{en:'Edit Bank Payment',ur:'بینک ادائیگی ترمیم'},addBankPaymentRecord:{en:'Add Bank Payment Record',ur:'بینک ادائیگی شامل کریں'},editExpense:{en:'Edit Expense',ur:'اخراجات ترمیم'},addNewExpense:{en:'Add New Expense',ur:'نیا اخراجات شامل کریں'},editPurchase:{en:'Edit Purchase',ur:'خریداری ترمیم'},addNewPurchase:{en:'Add New Purchase',ur:'نیی خریداری شامل کریں'},updateCustomer:{en:'Update Customer',ur:'گاہک اپ ڈیٹ کریں'},updateStock:{en:'Update Sale',ur:'سٹاک اپ ڈیٹ کریں'},sendStock:{en:'Create Sale',ur:'سٹاک بھیجیں'},savePayment:{en:'Save Payment',ur:'وصولی محفوظ کریں'},saveBankPayment:{en:'Save Bank Payment',ur:'بینک ادائیگی محفوظ کریں'},saveExpense:{en:'Save Expense',ur:'اخراجات محفوظ کریں'},savePurchase:{en:'Save Purchase',ur:'خریداری محفوظ کریں'},remainingAmountLabel:{en:'Remaining Amount:',ur:'باقی رقم:'},unpaidCustomers:{en:'Udhar (Not Paid) Customers',ur:'غیر ادا شدا گاہک'},itemsPending:{en:'items pending',ur:'آئٹم باقی'},remind:{en:'Remind',ur:'یاد دہانی'},paymentHistory:{en:'Payment History',ur:'ادائیگی کی تاریخ'},noPaymentsRecorded:{en:'No payments recorded yet',ur:'ابھی تک کوئی وصولی ریکارڈ نہیں'},allPaymentsReceived:{en:'All payments received!',ur:'تمام ادائیگیاں وصول!'},noBankPaymentsRecorded:{en:'No bank payments recorded',ur:'کوئی بینک ادائیگی ریکارڈ نہیں'},totalExpenses:{en:'Total Expenses',ur:'کل اخراجات'},noExpensesRecorded:{en:'No expenses recorded',ur:'کوئی اخراجات ریکارڈ نہیں'},noCustomersFound:{en:'No customers found',ur:'کوئی گاہک نہیں ملا'},noStockRecordsFound:{en:'No sales found',ur:'کوئی سٹاک ریکارڈ نہیں ملا'},noPurchasesFound:{en:'No purchases found',ur:'کوئی خریداری نہیں ملی'},noInvoicesFound:{en:'No invoices found',ur:'کوئی انوائس نہیں ملے'},customerDetails:{en:'Customer Details',ur:'گاہک کی تفصیلات'},paymentTimeline:{en:'Payment Timeline',ur:'ادائیگی ٹائم لائن'},stockHistory:{en:'Sales History',ur:'سٹاک کی تاریخ'},quickAddPayment:{en:'Quick Add Payment',ur:'فوری وصولی'},simpleCalculator:{en:'Simple Calculator',ur:'سادہ کیلکولیٹر'},monthlyWasooliChart:{en:'Monthly Wasooli Chart',ur:'ماہانہ وصولی چارٹ'},stockSentVsExpenses:{en:'Sales vs Expenses',ur:'سٹاک بمقابلہ اخراجات'},paymentStatus:{en:'Payment Status',ur:'ادائیگی کی حیثیت'},recentActivity:{en:'Recent Activity',ur:'حالیہ سرگرمی'},noActivityYet:{en:'No activity yet. Start by adding customers!',ur:'ابھی تک کوئی سرگرمی نہیں!'},netProfit:{en:'Net Profit (Received - Expenses)',ur:'خالص منافع'},totalSpent:{en:'Total Spent',ur:'کل خرچ'},remainingToPay:{en:'Remaining to Pay',ur:'باقی ادائیگی'},invoiceDetails:{en:'Invoice Details',ur:'انوائس تفصیلات'},partyDetails:{en:'Party Details',ur:'پارٹی تفصیلات'},itemDetails:{en:'Item Details',ur:'آئٹم تفصیلات'},amountBreakdown:{en:'Amount Breakdown',ur:'رقم کی تفصیل'},printInvoice:{en:'Print Invoice',ur:'انوائس پرنٹ کریں'},invoiceDeleted:{en:'Invoice deleted',ur:'انوائس حذف ہو گیا'},deleteInvoiceConfirm:{en:'Delete this invoice?',ur:'کیا اس انوائس کو حذف کریں؟'},purchaseAdded:{en:'Purchase Added!',ur:'خریداری شامل کر دی گئی!'},purchaseUpdated:{en:'Purchase Updated!',ur:'خریداری اپ ڈیٹ ہو گئی!'},purchaseDeleted:{en:'Purchase deleted',ur:'خریداری حذف ہو گئی'},deletePurchaseConfirm:{en:'Delete this purchase?',ur:'کیا اس خریداری کو حذف کریں؟'},supplierAndItemRequired:{en:'Supplier Name and Item Name are required',ur:'فراہم کنده اور آئٹم کا نام ضروری ہیں'},details:{en:'Details',ur:'تفصیلات'},whatsapp:{en:'WhatsApp',ur:'واٹس ایپ'},profit:{en:'Net Profit',ur:'خالص منافع'},bankSynced:{en:'Bank record synced!',ur:'بینک ریکارڈ سینک ہو گیا!'},selectCustomer:{en:'Select Customer',ur:'گاہک منتخب کریں'},
   forgotPassword:{en:'Forgot Password?',ur:'پاس ورڈ بھول گئے؟'},resetPassword:{en:'Reset Password',ur:'پاس ورڈ ری سیٹ کریں'},resetEmailSent:{en:'Password reset email sent!',ur:'پاس ورڈ ری سیٹ ای میل بھیج دی گئی!'},continueWithGoogle:{en:'Continue with Google',ur:'گوگل کے ساتھ جاری رکھیں'},
-  businessFinance:{en:'Business & Finance',ur:'بزنس اینڈ فنانس'},businessAcc:{en:'Business Acc',ur:'بزنس اکاؤنٹ'},totalWasooliReceived:{en:'Total Wasooli Received',ur:'کل وصولی موصول'},pendingPaymentsLabel:{en:'Pending Payments',ur:'زیر التوا ادائیگیاں'},thisMonthWasooli:{en:'This Month Wasooli',ur:'اس مہینے کی وصولی'},totalBankIn:{en:'Total Bank In',ur:'کل بینک ان'},totalTransactions:{en:'Total Transactions',ur:'کل لین دین'},banksUsed:{en:'Banks Used',ur:'استعمال شدہ بینک'},thisMonthExpenses:{en:'This Month',ur:'اس مہینے'},categoriesUsed:{en:'Categories Used',ur:'استعمال شدہ اقسام'},fifteenDaysReminders:{en:'15-Days Payment Reminders',ur:'15 دن کی ادائیگی یاد دہانی'},confirmDeletion:{en:'Confirm Deletion',ur:'حذف کرنے کی تصدیق'},confirmDeleteMsg:{en:'Are you sure you want to delete this record? This action cannot be undone.',ur:'کیا آپ واقعی اس ریکارڈ کو حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں کیا جا سکتا۔'},cancelBtn:{en:'Cancel',ur:'منسوخ'},deleteBtn:{en:'Delete',ur:'حذف کریں'},deletingBtn:{en:'Deleting...',ur:'حذف ہو رہا ہے...'},storageAlmostFull:{en:'Storage Almost Full',ur:'اسٹوریج تقریباً ختم'},storageWarningMsg:{en:'Your local storage is getting full. Please export a backup immediately to prevent data loss.',ur:'آپ کا لوکل اسٹوریج بھر رہا ہے۔ براہ کرم ڈیٹا کے نقصان سے بچنے کے لیے فوری طور پر بیک اپ ایکسپورٹ کریں۔'},backupNow:{en:'Backup Now',ur:'ابھی بیک اپ لیں'},dataBackupRecommended:{en:'Data Backup Recommended',ur:'ڈیٹا بیک اپ کی تجویز'},backupRemindMsg:{en:"It's been a while since your last backup. Keep your data safe.",ur:'کافی عرصہ ہو گیا ہے آپ کے آخری بیک اپ کو۔ اپنے ڈیٹا کو محفوظ رکھیں۔'},downloadBackupBtn:{en:'Download Backup',ur:'بیک اپ ڈاؤنلوڈ کریں'},completeFinanceSolution:{en:'Complete Business Finance Solution',ur:'مکمل بزنس فنانس حل'},orContinueWith:{en:'Or continue with',ur:'یا اس کے ساتھ جاری رکھیں'},backToLogin:{en:'Back to Login',ur:'لاگ ان پر واپس'},customBranding:{en:'Custom Branding',ur:'کسٹم برانڈنگ'},appNameLabel:{en:'Application Name',ur:'ایپلیکیشن کا نام'},logoLabel:{en:'Logo (Emoji or Image URL)',ur:'لوگو (ایموجی یا امیج URL)'},themeColorLabel:{en:'Theme Color',ur:'تھیم کلر'},saveBranding:{en:'Save Branding',ur:'برانڈنگ محفوظ کریں'},brandingSaved:{en:'Branding preferences saved successfully',ur:'برانڈنگ ترجیحات محفوظ ہو گئیں'},fromDate:{en:'From',ur:'سے'},toDate:{en:'To',ur:'تک'},clear:{en:'Clear',ur:'صاف کریں'},loading:{en:'Loading...',ur:'لوڈ ہو رہا ہے...'},noTransactionsFound:{en:'No transactions found',ur:'کوئی لین دین نہیں ملا'},backupDownloaded:{en:'Backup downloaded successfully',ur:'بیک اپ کامیابی سے ڈاؤنلوڈ ہو گیا'},backupRestored:{en:'Backup restored successfully',ur:'بیک اپ کامیابی سے بحال ہو گیا'},invalidJson:{en:'Invalid JSON file',ur:'غلط JSON فائل'},operationFailed:{en:'Operation failed',ur:'آپریشن ناکام'},failedToDeleteRecord:{en:'Failed to delete',ur:'حذف کرنے میں ناکام'},printContent:{en:'Print Content',ur:'مواد پرنٹ کریں'},
 };
 
 export function AppContent() {
@@ -61,7 +60,7 @@ export function AppContent() {
     if (s === 'true') document.documentElement.classList.add('dark');
     return s === 'true';
   });
-  const [language, setLanguage] = useState<Lang>(() => (localStorage.getItem('fintracker_lang') as Lang) || 'ur');
+  const [language, setLanguage] = useState<Lang>(() => (localStorage.getItem('fintracker_lang') as Lang) || 'en');
   const t = useCallback((key: string): string => (tr[key] && tr[key][language]) || key, [language]);
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('fintracker_user'));
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login');
@@ -70,48 +69,6 @@ export function AppContent() {
     if (s) return JSON.parse(s);
     return null;
   });
-
-  // Keep Firebase Auth state in sync - re-authenticate if session expires
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        const data = { id: firebaseUser.uid, name: firebaseUser.displayName || 'User', email: firebaseUser.email || '' };
-        setUser(data);
-        localStorage.setItem('fintracker_user', JSON.stringify(data));
-        setIsLoggedIn(true);
-      } else if (isLoggedIn) {
-        // Firebase Auth session expired but user thinks they're logged in
-        // Try to restore from localStorage - if operations fail, user will need to re-login
-        const stored = localStorage.getItem('fintracker_user');
-        if (!stored) {
-          setIsLoggedIn(false);
-          setUser(null);
-        }
-      }
-    });
-    return () => unsubscribe();
-  }, [isLoggedIn]);
-
-  // Helper to ensure Firebase Auth is active before operations
-  const ensureAuth = async () => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      // No Firebase auth user - session expired
-      toast({ title: t('error'), description: 'Session expired. Please login again.', variant: 'destructive' });
-      handleLogout();
-      return false;
-    }
-    try {
-      // Force refresh the token to ensure it's valid
-      await currentUser.getIdToken(true);
-      return true;
-    } catch (e) {
-      console.error('Token refresh failed:', e);
-      toast({ title: t('error'), description: 'Session expired. Please login again.', variant: 'destructive' });
-      handleLogout();
-      return false;
-    }
-  };
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
@@ -129,13 +86,7 @@ export function AppContent() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [branding, setBranding] = useState<store.Branding>(() => {
-    try {
-      const cached = localStorage.getItem('fintracker_branding');
-      if (cached) return JSON.parse(cached);
-    } catch {}
-    return { userId: '', appName: 'Finance Tracker', logoUrl: null, primaryColor: '#059669' };
-  });
+  const [branding, setBranding] = useState<store.Branding>({ userId: '', appName: 'Finance Tracker', logoUrl: null, primaryColor: '#059669' });
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -171,7 +122,6 @@ export function AppContent() {
   const [dateTo, setDateTo] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showBackupReminder, setShowBackupReminder] = useState(false);
   const [storageUsage, setStorageUsage] = useState({ used: 0, total: 5 * 1024 * 1024, warning: false });
 
@@ -236,10 +186,6 @@ export function AppContent() {
     localStorage.setItem('fintracker_dark', String(darkMode));
   }, [darkMode]);
 
-  useEffect(() => {
-    localStorage.setItem('fintracker_lang', language);
-  }, [language]);
-
   const fetchData = useCallback(async () => {
     if (!user) return;
     try {
@@ -251,9 +197,7 @@ export function AppContent() {
       setExpenses(await store.getExpenses(user.id) as any);
       setPurchases(await store.getPurchases(user.id) as any);
       setInvoices(await store.getInvoices(user.id) as any);
-      const brandingData = await store.getBranding(user.id);
-      setBranding(brandingData);
-      try { localStorage.setItem('fintracker_branding', JSON.stringify(brandingData)); } catch {}
+      setBranding(await store.getBranding(user.id));
       setDashboardData(await store.getDashboardData(user.id, dateFrom, dateTo));
     } catch (e: any) {
       toast({ title: t('error'), description: 'Failed to fetch data.', variant: 'destructive' });
@@ -364,10 +308,8 @@ export function AppContent() {
   const [deleteConf, setDeleteConf] = useState<{ id: string, type: 'customer' | 'stock' | 'payment' | 'bank' | 'expense' | 'purchase' | 'invoice' } | null>(null);
   const handleConfirmDelete = async () => {
     if (!deleteConf) return;
-    const isAuth = await ensureAuth();
-    if (!isAuth) return;
     try {
-      setIsDeleting(true);
+      setIsLoading(true);
       if (deleteConf.type === 'customer') { await store.deleteCustomer(deleteConf.id); toast({ title: t('deleted'), description: t('customerDeleted') }); }
       else if (deleteConf.type === 'stock') { await store.deleteStockRecord(deleteConf.id); toast({ title: t('deleted'), description: t('stockRecordDeleted') }); }
       else if (deleteConf.type === 'payment') { await store.deletePayment(deleteConf.id); toast({ title: t('deleted'), description: t('paymentDeleted') }); }
@@ -376,12 +318,10 @@ export function AppContent() {
       else if (deleteConf.type === 'purchase') { await store.deletePurchase(deleteConf.id); toast({ title: t('deleted'), description: t('purchaseDeleted') }); }
       else if (deleteConf.type === 'invoice') { await store.deleteInvoice(deleteConf.id); toast({ title: t('deleted'), description: t('invoiceDeleted') }); }
       await fetchData();
-    } catch (e: any) {
-      console.error('Delete error:', e);
-      const errMsg = e?.message || t('operationFailed');
-      toast({ title: t('error'), description: errMsg, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: t('error'), description: 'Failed to delete', variant: 'destructive' });
     } finally {
-      setIsDeleting(false);
+      setIsLoading(false);
       setDeleteConf(null);
     }
   };
@@ -393,7 +333,7 @@ export function AppContent() {
       if (editingCustomer) { await store.updateCustomer(editingCustomer.id, custForm); toast({ title: t('updated'), description: t('customerUpdated') }); }
       else { await store.createCustomer({ userId: user?.id || '', ...custForm }); toast({ title: t('added'), description: t('newCustomerAdded') }); }
       setShowCustomerDialog(false); setEditingCustomer(null); resetCustForm(); await fetchData();
-    } catch(e: any) { console.error('Save customer error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
+    } catch(e) { toast({ title: t('error'), description: 'Operation failed', variant: 'destructive' }); }
     finally { setIsLoading(false); }
   };
   const handleDeleteCustomer = (id: string) => setDeleteConf({ id, type: 'customer' });
@@ -408,27 +348,24 @@ export function AppContent() {
       else await store.createStockRecord(body);
       toast({ title: isEdit ? t('updated') : t('added'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') });
       setShowStockDialog(false); setEditingStock(null); resetStockForm(); await fetchData();
-    } catch(e: any) { console.error('Save stock error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
+    } catch(e) { toast({ title: t('error'), description: 'Operation failed', variant: 'destructive' }); }
     finally { setIsLoading(false); }
   };
   const handleDeleteStock = (id: string) => setDeleteConf({ id, type: 'stock' });
 
   const handleSavePayment = async () => {
     if (!paymentForm.customerId || !paymentForm.amount) { toast({ title: t('error'), description: t('customerAndAmountRequired'), variant: 'destructive' }); return; }
-    const isAuth = await ensureAuth();
-    if (!isAuth) return;
     try {
       setIsLoading(true);
-      const userId = auth.currentUser?.uid || user?.id || '';
       if (editingPayment) {
-        await store.updatePayment(editingPayment.id, { userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 });
+        await store.updatePayment(editingPayment.id, { userId: user?.id || "", ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 });
         toast({ title: t('updated'), description: t('stockRecordUpdated') });
       } else {
-        await store.createPayment({ userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 });
+        await store.createPayment({ userId: user?.id || "", ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 });
         toast({ title: t('paymentAdded'), description: `PKR ${paymentForm.amount} ${t('received')}` });
       }
       setShowPaymentDialog(false); setEditingPayment(null); resetPaymentForm(); await fetchData();
-    } catch(e: any) { console.error('Save payment error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
+    } catch(e) { toast({ title: t('error'), description: 'Operation failed', variant: 'destructive' }); }
     finally { setIsLoading(false); }
   };
   const handleDeletePayment = (id: string) => setDeleteConf({ id, type: 'payment' });
@@ -440,7 +377,7 @@ export function AppContent() {
       if (editingBankPayment) { await store.updateBankPayment(editingBankPayment.id, { userId: user?.id || "", ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 }); toast({ title: t('updated'), description: t('bankPaymentAdded') }); }
       else { await store.createBankPayment({ userId: user?.id || "", ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 }); toast({ title: t('bankPaymentAdded'), description: `PKR ${bankForm.paymentAmount} ${t('recorded')}` }); }
       setShowBankPaymentDialog(false); setEditingBankPayment(null); resetBankForm(); await fetchData();
-    } catch(e: any) { console.error('Save bank payment error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
+    } catch(e) { toast({ title: t('error'), description: 'Operation failed', variant: 'destructive' }); }
     finally { setIsLoading(false); }
   };
   const handleDeleteBankPayment = (id: string) => setDeleteConf({ id, type: 'bank' });
@@ -452,7 +389,7 @@ export function AppContent() {
       if (editingExpense) { await store.updateExpense(editingExpense.id, { userId: user?.id || "", ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 }); toast({ title: t('updated'), description: t('expenseAdded') }); }
       else { await store.createExpense({ userId: user?.id || "", ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 }); toast({ title: t('expenseAdded'), description: `PKR ${expenseForm.amount} ${t('recorded')}` }); }
       setShowExpenseDialog(false); setEditingExpense(null); resetExpenseForm(); await fetchData();
-    } catch(e: any) { console.error('Save expense error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
+    } catch(e) { toast({ title: t('error'), description: 'Operation failed', variant: 'destructive' }); }
     finally { setIsLoading(false); }
   };
   const handleDeleteExpense = (id: string) => setDeleteConf({ id, type: 'expense' });
@@ -467,7 +404,7 @@ export function AppContent() {
       else await store.createPurchase(body);
       toast({ title: isEdit ? t('purchaseUpdated') : t('purchaseAdded'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') });
       setShowPurchaseDialog(false); setEditingPurchase(null); resetPurchaseForm(); await fetchData();
-    } catch(e: any) { console.error('Save purchase error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
+    } catch(e) { toast({ title: t('error'), description: 'Operation failed', variant: 'destructive' }); }
     finally { setIsLoading(false); }
   };
   const handleDeletePurchase = (id: string) => setDeleteConf({ id, type: 'purchase' });
@@ -488,170 +425,67 @@ export function AppContent() {
   };
 
   const handlePrint = () => {
-    const invoicePrint = document.getElementById('invoice-print');
-    if (invoicePrint) {
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-
-      const cw = iframe.contentWindow;
-      if (cw) {
-        cw.document.open();
-        cw.document.write(`
-          <html>
-            <head>
-              <title>Print Invoice</title>
-              <style>
-                body { font-family: 'Inter', sans-serif; padding: 24px; color: #000; line-height: 1.6; }
-                .text-center { text-align: center; }
-                .border-b { border-bottom: 2px solid #ddd; padding-bottom: 20px; margin-bottom: 20px; }
-                .mt-2 { margin-top: 8px; }
-                .mt-8 { margin-top: 32px; }
-                .font-bold { font-weight: bold; }
-                .font-semibold { font-weight: 600; }
-                .text-2xl { font-size: 1.5rem; }
-                .text-lg { font-size: 1.125rem; }
-                .text-sm { font-size: 0.875rem; }
-                .text-xs { font-size: 0.75rem; }
-                .text-gray-500 { color: #6b7280; }
-                .text-emerald-700 { color: #047857; }
-                .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-                .p-4 { padding: 16px; }
-                .bg-gray-50 { background-color: #f9fafb; border-radius: 8px; }
-                .bg-emerald-50 { background-color: #ecfdf5; border-radius: 8px; }
-                .flex { display: flex; align-items: center; }
-                .flex-col { flex-direction: column; }
-                .justify-between { justify-content: space-between; }
-                .justify-center { justify-content: center; }
-                .gap-3 { gap: 12px; }
-                .space-y-2 > * + * { margin-top: 8px; }
-                .space-y-6 > * + * { margin-top: 24px; }
-                .text-green-700 { color: #15803d; }
-                .text-red-600 { color: #dc2626; }
-                .text-xl { font-size: 1.25rem; }
-                .pt-2 { padding-top: 8px; }
-                .border-t { border-top: 1px solid #ddd; }
-                button, .no-print, svg { display: none !important; }
-                .opacity-0 { display: none !important; }
-              </style>
-            </head>
-            <body>
-              ${invoicePrint.innerHTML}
-            </body>
-          </html>
-        `);
-        cw.document.close();
-        cw.focus();
-        setTimeout(() => {
-          cw.print();
-          setTimeout(() => document.body.removeChild(iframe), 1000);
-        }, 500);
-      }
+    const printContent = document.getElementById('invoice-print');
+    if (!printContent) {
+      window.print();
       return;
     }
-
-    // Generate a clean printable report for the current page
-    const pageName = navItems.find(n => n.id === activeTab)?.label || 'Report';
-    let reportHTML = '';
-
-    if (activeTab === 'dashboard' && dashboardData) {
-      reportHTML = `
-        <div style="text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px;">
-          <h1 style="font-size:18px;margin:0;">${branding.appName || 'Finance Tracker'}</h1>
-          <p style="color:#666;font-size:12px;">Dashboard Report - ${new Date().toLocaleDateString('en-PK')}</p>
-        </div>
-        <h2 style="font-size:16px;margin:16px 0 8px;">Summary</h2>
-        <table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>
-          <tr><td>Total Customers</td><td>${dashboardData.totalCustomers}</td></tr>
-          <tr><td>Total Sales Value</td><td>${PKR(dashboardData.totalMoneyReceived + dashboardData.totalRemainingMoney)}</td></tr>
-          <tr><td>Total Received</td><td style="color:green;">${PKR(dashboardData.totalMoneyReceived)}</td></tr>
-          <tr><td>Remaining Money</td><td style="color:red;">${PKR(dashboardData.totalRemainingMoney)}</td></tr>
-          <tr><td>Total Expenses</td><td style="color:red;">${PKR(dashboardData.totalExpenses)}</td></tr>
-          <tr><td>Today Wasooli</td><td style="color:green;">${PKR(dashboardData.todayWasooli)}</td></tr>
-          <tr><td>This Month Wasooli</td><td style="color:green;">${PKR(dashboardData.monthWasooli)}</td></tr>
-          <tr><td>Pending Customers</td><td style="color:red;">${dashboardData.pendingPayments}</td></tr>
-          <tr><td>Cleared Customers</td><td style="color:green;">${dashboardData.paidPayments}</td></tr>
-        </tbody></table>
-        ${customers.filter(c => c.totalRemaining > 0).length > 0 ? `
-        <h2 style="font-size:16px;margin:16px 0 8px;">Udhar (Unpaid) Customers</h2>
-        <table><thead><tr><th>Name</th><th>Phone</th><th>Paid</th><th>Remaining</th><th>Status</th></tr></thead><tbody>
-          ${customers.filter(c => c.totalRemaining > 0).map(c => {
-            const total = c.totalPaid + c.totalRemaining;
-            const status = c.totalPaid > 0 ? 'Thora Udhar' : 'Mukammal Udhar';
-            return `<tr><td>${c.name}</td><td>${c.phone}</td><td>${PKR(c.totalPaid)}</td><td style="color:red;">${PKR(c.totalRemaining)}</td><td>${status}</td></tr>`;
-          }).join('')}
-        </tbody></table>` : ''}
-        ${dashboardData.recentActivity.length > 0 ? `
-        <h2 style="font-size:16px;margin:16px 0 8px;">Recent Activity</h2>
-        <table><thead><tr><th>Date</th><th>Description</th><th>Customer</th></tr></thead><tbody>
-          ${dashboardData.recentActivity.slice(0, 10).map(a => `<tr><td>${new Date(a.date).toLocaleDateString('en-PK')}</td><td>${a.description}</td><td>${a.customerName || '-'}</td></tr>`).join('')}
-        </tbody></table>` : ''}
-      `;
-    } else if (activeTab === 'wasooli') {
-      const filteredPayments = payments.filter(p => (!dateFrom || p.date >= dateFrom) && (!dateTo || p.date <= dateTo));
-      reportHTML = `
-        <div style="text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px;">
-          <h1 style="font-size:18px;margin:0;">${branding.appName || 'Finance Tracker'}</h1>
-          <p style="color:#666;font-size:12px;">Wasooli Report - ${new Date().toLocaleDateString('en-PK')}</p>
-        </div>
-        <h2 style="font-size:16px;margin:16px 0 8px;">Summary</h2>
-        <table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>
-          <tr><td>Total Wasooli Received</td><td style="color:green;">${PKR(filteredPayments.reduce((s, p) => s + p.amount, 0))}</td></tr>
-          <tr><td>Pending Payments</td><td style="color:red;">${PKR(customers.reduce((s, c) => s + c.totalRemaining, 0))}</td></tr>
-        </tbody></table>
-        ${customers.filter(c => c.totalRemaining > 0).length > 0 ? `
-        <h2 style="font-size:16px;margin:16px 0 8px;">Udhar Customers</h2>
-        <table><thead><tr><th>Name</th><th>Phone</th><th>Paid</th><th>Remaining</th><th>Status</th></tr></thead><tbody>
-          ${customers.filter(c => c.totalRemaining > 0).map(c => {
-            const status = c.totalPaid > 0 ? 'Thora Udhar' : 'Mukammal Udhar';
-            return `<tr><td>${c.name}</td><td>${c.phone}</td><td>${PKR(c.totalPaid)}</td><td style="color:red;">${PKR(c.totalRemaining)}</td><td>${status}</td></tr>`;
-          }).join('')}
-        </tbody></table>` : ''}
-        <h2 style="font-size:16px;margin:16px 0 8px;">Payment History</h2>
-        <table><thead><tr><th>Date</th><th>Customer</th><th>Method</th><th>Amount</th><th>Note</th></tr></thead><tbody>
-          ${filteredPayments.map(p => `<tr><td>${new Date(p.date).toLocaleDateString('en-PK')}</td><td>${p.customer?.name || 'Unknown'}</td><td>${p.paymentMethod}</td><td style="color:green;">${PKR(p.amount)}</td><td>${p.transactionNote || '-'}</td></tr>`).join('')}
-        </tbody></table>
-      `;
-    } else {
-      // Generic fallback for other pages
-      const mainContent = document.querySelector('[class*="max-w-6xl"]');
-      if (mainContent) {
-        reportHTML = mainContent.innerHTML
-          .replace(/<button[^>]*>[\s\S]*?<\/button>/gi, '')
-          .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
-      }
-    }
-
-    if (reportHTML) {
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-      const cw = iframe.contentWindow;
-      if (cw) {
-        cw.document.open();
-        cw.document.write(`
-          <html>
-            <head>
-              <title>${branding.appName || 'Finance Tracker'} - ${pageName}</title>
-              <style>
-                body { font-family: 'Inter', Arial, sans-serif; padding: 24px; color: #000; line-height: 1.6; font-size: 14px; }
-                h1, h2, h3 { margin: 0 0 8px; }
-                table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-                th { background: #f5f5f5; font-weight: 600; }
-                button, .no-print, svg, input, select { display: none !important; }
-              </style>
-            </head>
-            <body>${reportHTML}</body>
-          </html>
-        `);
-        cw.document.close();
-        cw.focus();
-        setTimeout(() => {
-          cw.print();
-          setTimeout(() => document.body.removeChild(iframe), 1000);
-        }, 500);
-      }
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    
+    const cw = iframe.contentWindow;
+    if (cw) {
+      cw.document.open();
+      cw.document.write(`
+        <html>
+          <head>
+            <title>Print Invoice</title>
+            <style>
+              body { font-family: sans-serif; padding: 20px; color: #000; }
+              .text-center { text-align: center; }
+              .border-b { border-bottom: 2px solid #ddd; padding-bottom: 20px; margin-bottom: 20px; }
+              .mt-2 { margin-top: 8px; }
+              .mt-8 { margin-top: 32px; }
+              .font-bold { font-weight: bold; }
+              .font-semibold { font-weight: 600; }
+              .text-2xl { font-size: 1.5rem; }
+              .text-lg { font-size: 1.125rem; }
+              .text-sm { font-size: 0.875rem; }
+              .text-xs { font-size: 0.75rem; }
+              .text-gray-500 { color: #6b7280; }
+              .text-emerald-700 { color: #047857; }
+              .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+              .p-4 { padding: 16px; }
+              .bg-gray-50 { background-color: #f9fafb; border-radius: 8px; }
+              .bg-emerald-50 { background-color: #ecfdf5; border-radius: 8px; }
+              .flex { display: flex; align-items: center; }
+              .flex-col { flex-direction: column; }
+              .justify-between { justify-content: space-between; }
+              .justify-center { justify-content: center; }
+              .gap-3 { gap: 12px; }
+              .space-y-2 > * + * { margin-top: 8px; }
+              .space-y-6 > * + * { margin-top: 24px; }
+              .text-green-700 { color: #15803d; }
+              .text-red-600 { color: #dc2626; }
+              .text-xl { font-size: 1.25rem; }
+              .pt-2 { padding-top: 8px; }
+              .border-t { border-top: 1px solid #ddd; }
+              button, .no-print, svg { display: none !important; }
+              .opacity-0 { display: none !important; }
+            </style>
+          </head>
+          <body>
+            ${printContent.innerHTML}
+          </body>
+        </html>
+      `);
+      cw.document.close();
+      cw.focus();
+      setTimeout(() => {
+        cw.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 500);
     } else {
       window.print();
     }
@@ -721,7 +555,7 @@ export function AppContent() {
                   </div>
                   <div><Label className="text-sm font-medium mb-1.5 block text-gray-900 dark:text-gray-200">{t('email')}</Label><Input type="email" placeholder="your@email.com" className="h-12 bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} /></div>
                   <Button disabled={isAuthLoading} className="w-full h-12 text-sm font-medium mt-2 bg-emerald-600 hover:bg-emerald-700 text-white transition-colors" onClick={handleResetPassword}>{isAuthLoading ? '...' : t('resetPassword')}</Button>
-                  <Button variant="ghost" className="w-full text-sm text-gray-500" onClick={() => setAuthMode('login')}>{t('backToLogin')}</Button>
+                  <Button variant="ghost" className="w-full text-sm text-gray-500" onClick={() => setAuthMode('login')}>Back to Login</Button>
                 </div>
               ) : authMode === 'login' ? (
                 <div className="space-y-4">
@@ -741,7 +575,7 @@ export function AppContent() {
                   
                   <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-200 dark:border-gray-800" /></div>
-                    <div className="relative flex justify-center text-xs text-gray-500 uppercase bg-white dark:bg-gray-900 px-2">{t('orContinueWith')}</div>
+                    <div className="relative flex justify-center text-xs text-gray-500 uppercase bg-white dark:bg-gray-900 px-2">Or continue with</div>
                   </div>
                   <Button disabled={isAuthLoading} variant="outline" className="w-full h-12 text-sm font-medium border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-800" onClick={handleGoogleSignIn}>
                     <Chrome className="w-5 h-5 mr-2 text-blue-500" /> {t('continueWithGoogle')}
@@ -764,7 +598,7 @@ export function AppContent() {
                   
                   <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-200 dark:border-gray-800" /></div>
-                    <div className="relative flex justify-center text-xs text-gray-500 uppercase bg-white dark:bg-gray-900 px-2">{t('orContinueWith')}</div>
+                    <div className="relative flex justify-center text-xs text-gray-500 uppercase bg-white dark:bg-gray-900 px-2">Or continue with</div>
                   </div>
                   <Button disabled={isAuthLoading} variant="outline" className="w-full h-12 text-sm font-medium border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white hover:bg-gray-50 dark:bg-gray-950 dark:hover:bg-gray-800" onClick={handleGoogleSignIn}>
                     <Chrome className="w-5 h-5 mr-2 text-blue-500" /> {t('continueWithGoogle')}
@@ -773,7 +607,7 @@ export function AppContent() {
               )}
             </CardContent>
           </Card>
-          <p className="text-center text-gray-500 dark:text-gray-500 text-xs mt-6 uppercase tracking-widest font-medium">{t('completeFinanceSolution')}</p>
+          <p className="text-center text-gray-500 dark:text-gray-500 text-xs mt-6 uppercase tracking-widest font-medium">Complete Business Finance Solution</p>
         </motion.div>
       </div>
     );
@@ -817,7 +651,7 @@ export function AppContent() {
               )}
               <div className="flex flex-col">
                 <h1 className="font-semibold tracking-tight text-gray-900 dark:text-gray-100 leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]" title={branding.appName}>{branding.appName}</h1>
-                <span className="text-[10px] text-gray-500 mt-0.5 leading-none">{t('businessFinance')}</span>
+                <span className="text-[10px] text-gray-400 mt-0.5 leading-none">'Business & Finance'</span>
               </div>
             </div>
             <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 text-gray-500" onClick={() => setSidebarOpen(false)}><X className="h-4 w-4" /></Button>
@@ -829,7 +663,7 @@ export function AppContent() {
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-none mb-1">{user?.name}</span>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('businessAcc')}</span>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Business Acc</span>
             </div>
           </div>
         </div>
@@ -838,14 +672,13 @@ export function AppContent() {
           <nav className="space-y-0.5">
             {navItems.map(item => (
               <button key={item.id} onClick={() => { setActiveTab(item.id); setSidebarOpen(false); setSearchQuery(''); setFilterStatus('all'); }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-200 font-medium ${activeTab === item.id ? 'text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-200'}`}
-                style={activeTab === item.id ? { backgroundColor: branding.primaryColor || '#059669' } : undefined}>
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all duration-200 font-medium ${activeTab === item.id ? 'bg-[#00b060] text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50 hover:text-gray-900 dark:hover:text-gray-200'}`}>
                 <item.icon className={`h-4 w-4 ${activeTab === item.id ? 'text-white' : ''}`} />
                 <span>{item.label}</span>
-                {item.id === 'customers' && <span className={`ml-auto ${activeTab === item.id ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'} text-[10px] px-2 py-0.5 rounded-full font-semibold`}>{customers.length}</span>}
+                {item.id === 'customers' && <span className={`ml-auto ${activeTab === item.id ? 'bg-white/20 text-white' : 'bg-[#e6f7ef] text-[#00b060] dark:bg-emerald-900/40 dark:text-emerald-400'} text-[10px] px-2 py-0.5 rounded-full font-semibold`}>{customers.length}</span>}
                 {item.id === 'wasooli' && dashboardData?.pendingPayments ? <span className={`ml-auto ${activeTab === item.id ? 'bg-white/20 text-white' : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'} text-[10px] px-2 py-0.5 rounded-full font-semibold`}>{dashboardData.pendingPayments}</span> : null}
                 {item.id === 'purchases' && purchases.length > 0 ? <span className={`ml-auto ${activeTab === item.id ? 'bg-white/20 text-white' : 'bg-transparent border border-gray-200 dark:border-gray-700 text-gray-500'} text-[10px] px-2 py-0.5 rounded-full font-semibold`}>{purchases.length}</span> : null}
-                {item.id === 'invoices' && invoices.length > 0 ? <span className={`ml-auto ${activeTab === item.id ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'} text-[10px] px-2 py-0.5 rounded-full font-semibold`}>{invoices.length}</span> : null}
+                {item.id === 'invoices' && invoices.length > 0 ? <span className={`ml-auto ${activeTab === item.id ? 'bg-white/20 text-white' : 'bg-[#e6ecf7] text-[#3060c0] dark:bg-blue-900/30 dark:text-blue-400'} text-[10px] px-2 py-0.5 rounded-full font-semibold`}>{invoices.length}</span> : null}
               </button>
             ))}
           </nav>
@@ -864,10 +697,6 @@ export function AppContent() {
             <h2 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white">{navItems.find(n => n.id === activeTab)?.label || t('dashboard')}</h2>
           </div>
           <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white gap-1.5" onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')} title={t('language')}>
-              <Languages className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{language === 'en' ? 'اردو' : 'EN'}</span>
-            </Button>
             <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500 hover:text-gray-900 dark:hover:text-white" onClick={() => setShowCalculator(true)} title={t('calculator')}><Calculator className="h-4 w-4" /></Button>
             <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500 hover:text-gray-900 dark:hover:text-white" onClick={() => setDarkMode(!darkMode)} title={t('darkMode')}>{darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</Button>
             <Separator orientation="vertical" className="h-5 mx-1 bg-gray-200 dark:bg-gray-800" />
@@ -887,11 +716,11 @@ export function AppContent() {
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-red-100 dark:bg-red-800/50 rounded-full"><Database className="w-5 h-5 text-red-600 dark:text-red-400" /></div>
                         <div>
-                          <h4 className="font-medium text-red-800 dark:text-red-300">{t('storageAlmostFull')}</h4>
-                          <p className="text-sm text-red-600 dark:text-red-400/80 mt-0.5">{t('storageWarningMsg')} ({(storageUsage.used / 1024 / 1024).toFixed(2)} MB / {(storageUsage.total / 1024 / 1024).toFixed(2)} MB)</p>
+                          <h4 className="font-medium text-red-800 dark:text-red-300">Storage Almost Full</h4>
+                          <p className="text-sm text-red-600 dark:text-red-400/80 mt-0.5">Your local storage is {(storageUsage.used / 1024 / 1024).toFixed(2)} MB out of {(storageUsage.total / 1024 / 1024).toFixed(2)} MB used. Please export a backup immediately to prevent data loss. A permanent cloud solution (Firebase) is recommended.</p>
                         </div>
                       </div>
-                      <Button onClick={handleDownloadBackup} className="bg-red-600 hover:bg-red-700 text-white border-0 btn-premium"><Download className="w-4 h-4 mr-2" /> {t('backupNow')}</Button>
+                      <Button onClick={handleDownloadBackup} className="bg-red-600 hover:bg-red-700 text-white border-0"><Download className="w-4 h-4 mr-2" /> Backup Now</Button>
                     </div>
                   )}
                   {showBackupReminder && !storageUsage.warning && (
@@ -899,74 +728,74 @@ export function AppContent() {
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-amber-100 dark:bg-amber-800/50 rounded-full"><AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" /></div>
                         <div>
-                          <h4 className="font-medium text-amber-800 dark:text-amber-300">{t('dataBackupRecommended')}</h4>
-                          <p className="text-sm text-amber-600 dark:text-amber-400/80 mt-0.5">{t('backupRemindMsg')}</p>
+                          <h4 className="font-medium text-amber-800 dark:text-amber-300">Data Backup Recommended</h4>
+                          <p className="text-sm text-amber-600 dark:text-amber-400/80 mt-0.5">It's been a while since your last backup. Keep your data safe.</p>
                         </div>
                       </div>
-                      <Button onClick={handleDownloadBackup} className="bg-amber-600 hover:bg-amber-700 text-white border-0 btn-premium"><Download className="w-4 h-4 mr-2" /> {t('downloadBackupBtn')}</Button>
+                      <Button onClick={handleDownloadBackup} className="bg-amber-600 hover:bg-amber-700 text-white border-0"><Download className="w-4 h-4 mr-2" /> Download Backup</Button>
                     </div>
                   )}
 
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-2">
                     <div className="flex flex-col sm:flex-row gap-4 max-w-sm w-full">
-                      <div className="flex-1"><Label className="text-[10px] text-gray-500 font-medium mb-1 block">{t('fromDate')}</Label><Input type="date" className="h-9 w-full bg-card" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
-                      <div className="flex-1"><Label className="text-[10px] text-gray-500 font-medium mb-1 block">{t('toDate')}</Label><Input type="date" className="h-9 w-full bg-card" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
-                      {(dateFrom || dateTo) && <div className="self-end pb-0.5"><Button variant="ghost" size="sm" className="h-8 text-gray-500" onClick={() => { setDateFrom(''); setDateTo(''); }}><X className="h-3.5 w-3.5 mr-1" />{t('clear')}</Button></div>}
+                      <div className="flex-1"><Label className="text-[10px] text-gray-500 font-medium mb-1 block">From</Label><Input type="date" className="h-9 w-full bg-card" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+                      <div className="flex-1"><Label className="text-[10px] text-gray-500 font-medium mb-1 block">To</Label><Input type="date" className="h-9 w-full bg-card" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+                      {(dateFrom || dateTo) && <div className="self-end pb-0.5"><Button variant="ghost" size="sm" className="h-8 text-gray-500" onClick={() => { setDateFrom(''); setDateTo(''); }}><X className="h-3.5 w-3.5 mr-1" />Clear</Button></div>}
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <Card className="border shadow-sm stat-card-green card-hover">
+                    <Card className="border shadow-sm bg-card hover:shadow-md transition-all">
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">{t('totalReceived')}</span>
-                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-200/60 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('totalReceived')}</span>
+                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                             <TrendingUp className="h-5 w-5" />
                           </div>
                         </div>
-                        <p className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{PKR(dashboardData.totalMoneyReceived)}</p>
+                        <p className="text-3xl font-bold tracking-tight text-foreground">{PKR(dashboardData.totalMoneyReceived)}</p>
                       </CardContent>
                     </Card>
-                    <Card className="border shadow-sm stat-card-orange card-hover">
+                    <Card className="border shadow-sm bg-card hover:shadow-md transition-all">
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <span className="text-xs font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wider">{t('remainingMoney')}</span>
-                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-orange-200/60 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('remainingMoney')}</span>
+                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
                             <AlertCircle className="h-5 w-5" />
                           </div>
                         </div>
-                        <p className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{PKR(dashboardData.totalRemainingMoney)}</p>
+                        <p className="text-3xl font-bold tracking-tight text-foreground">{PKR(dashboardData.totalRemainingMoney)}</p>
                       </CardContent>
                     </Card>
-                    <Card className="border shadow-sm stat-card-blue card-hover">
+                    <Card className="border shadow-sm bg-card hover:shadow-md transition-all">
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider">{t('todayWasooli')}</span>
-                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-200/60 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('todayWasooli')}</span>
+                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                             <Clock className="h-5 w-5" />
                           </div>
                         </div>
-                        <p className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{PKR(dashboardData.todayWasooli)}</p>
+                        <p className="text-3xl font-bold tracking-tight text-foreground">{PKR(dashboardData.todayWasooli)}</p>
                       </CardContent>
                     </Card>
-                    <Card className="border shadow-sm stat-card-indigo card-hover">
+                    <Card className="border shadow-sm bg-card hover:shadow-md transition-all">
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">{t('thisMonth')}</span>
-                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-200/60 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('thisMonth')}</span>
+                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                             <Calendar className="h-5 w-5" />
                           </div>
                         </div>
-                        <p className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{PKR(dashboardData.monthWasooli)}</p>
+                        <p className="text-3xl font-bold tracking-tight text-foreground">{PKR(dashboardData.monthWasooli)}</p>
                       </CardContent>
                     </Card>
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><Users className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{dashboardData.totalCustomers}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('totalCustomers')}</p></CardContent></Card>
-                    <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><Package className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{dashboardData.totalStockRecords}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('stockSent')}</p></CardContent></Card>
-                    <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><ShoppingCart className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{purchases.length}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('totalPurchases')}</p></CardContent></Card>
-                    <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><CheckCircle2 className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{dashboardData.paidPayments}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('paid')}</p></CardContent></Card>
+                    <Card className="shadow-sm border bg-card hover:shadow-md transition-all"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><Users className="h-6 w-6" /></div><p className="text-2xl font-bold text-foreground leading-none mb-2">{dashboardData.totalCustomers}</p><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('totalCustomers')}</p></CardContent></Card>
+                    <Card className="shadow-sm border bg-card hover:shadow-md transition-all"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><Package className="h-6 w-6" /></div><p className="text-2xl font-bold text-foreground leading-none mb-2">{dashboardData.totalStockRecords}</p><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('stockSent')}</p></CardContent></Card>
+                    <Card className="shadow-sm border bg-card hover:shadow-md transition-all"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><ShoppingCart className="h-6 w-6" /></div><p className="text-2xl font-bold text-foreground leading-none mb-2">{purchases.length}</p><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('totalPurchases')}</p></CardContent></Card>
+                    <Card className="shadow-sm border bg-card hover:shadow-md transition-all"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><CheckCircle2 className="h-6 w-6" /></div><p className="text-2xl font-bold text-foreground leading-none mb-2">{dashboardData.paidPayments}</p><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('paid')}</p></CardContent></Card>
                   </div>
                   
                   <Card className="border shadow-sm bg-gray-900 border-gray-800 text-white">
@@ -985,37 +814,7 @@ export function AppContent() {
                     </CardContent>
                   </Card>
                   <div className="grid md:grid-cols-2 gap-6">
-                    <Card className="shadow-sm border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20"><CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2 text-blue-600"><Database className="h-5 w-5" /> {t('dataBackup')}</CardTitle></CardHeader><CardContent>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{language === 'ur' ? 'اپنے ڈیٹا کو محفوظ رکھیں۔ بیک اپ ڈاؤنلوڈ کریں۔' : 'Keep your data safe. Download a backup.'}</p>
-                      <div className="flex flex-col gap-2">
-                        <Button variant="outline" className="w-full h-11 justify-start" onClick={handleDownloadBackup}><Download className="h-4 w-4 mr-2" />{t('downloadBackup')}</Button>
-                        <div className="relative">
-                          <input type="file" title="Upload Backup (JSON)" accept=".json" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={e => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = async (ev) => {
-                              try {
-                                if (!user) return;
-                                const data = JSON.parse(ev.target?.result as string);
-                                if (await store.restoreBackup(data, user.id)) {
-                                  toast({ title: t('updated'), description: t('backupRestored') });
-                                  setTimeout(() => window.location.reload(), 1000);
-                                } else {
-                                  toast({ title: t('error'), description: t('operationFailed'), variant: 'destructive' });
-                                }
-                              } catch {
-                                toast({ title: t('error'), description: t('invalidJson'), variant: 'destructive' });
-                              }
-                            };
-                            reader.readAsText(file);
-                            e.target.value = '';
-                          }} />
-                          <Button variant="outline" className="w-full h-11 justify-start pointer-events-none"><Upload className="h-4 w-4 mr-2" />{language === 'ur' ? 'بیک اپ اپلوڈ کریں' : 'Upload Backup (JSON)'}</Button>
-                        </div>
-                      </div>
-                    </CardContent></Card>
-                    <Card className="shadow-sm border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20"><CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2 text-orange-600"><AlertCircle className="h-5 w-5" /> {t('fifteenDaysReminders')}</CardTitle></CardHeader><CardContent>
+                    <Card className="shadow-sm border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20"><CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2 text-orange-600"><AlertCircle className="h-5 w-5" /> 15-Days Payment Reminders</CardTitle></CardHeader><CardContent>
                       <ScrollArea className="h-64 pr-4"><div className="space-y-3">
                         {customers.filter(c => {
                           if (c.totalRemaining <= 0) return false;
@@ -1041,8 +840,8 @@ export function AppContent() {
                       </div></ScrollArea>
                     </CardContent></Card>
                     <Card className="shadow-sm"><CardHeader><CardTitle className="text-lg">{t('paymentStatus')}</CardTitle></CardHeader><CardContent>
-                      <div className="h-48 flex items-center justify-center"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={[{ name: t('paid'), value: dashboardData.paidPayments }, { name: t('halfPaid'), value: customers.filter(c => c.totalPaid > 0 && c.totalRemaining > 0).length }, { name: t('notPaid'), value: customers.filter(c => c.totalPaid <= 0 && c.totalRemaining > 0).length }].filter(d => d.value > 0)} cx="50%" cy="50%" outerRadius={70} dataKey="value" label><Cell fill="#22c55e" /><Cell fill="#f59e0b" /><Cell fill="#ef4444" /></Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-                      <div className="flex justify-center gap-4 mt-2 flex-wrap"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /><span className="text-sm">{t('paid')}</span></div><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500" /><span className="text-sm">{t('halfPaid')}</span></div><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500" /><span className="text-sm">{t('notPaid')}</span></div></div>
+                      <div className="h-48 flex items-center justify-center"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={[{ name: t('paid'), value: dashboardData.paidPayments }, { name: t('notPaid'), value: dashboardData.pendingPayments }]} cx="50%" cy="50%" outerRadius={70} dataKey="value" label><Cell fill="#22c55e" /><Cell fill="#ef4444" /></Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+                      <div className="flex justify-center gap-6 mt-2"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /><span className="text-sm">{t('paid')}</span></div><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500" /><span className="text-sm">{t('notPaid')}</span></div></div>
                     </CardContent></Card>
                   </div>
                   <div className="grid md:grid-cols-2 gap-6">
@@ -1057,7 +856,7 @@ export function AppContent() {
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${a.type === 'payment' ? 'bg-green-100 dark:bg-green-900 text-green-600' : a.type === 'stock' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600' : 'bg-orange-100 dark:bg-orange-900 text-orange-600'}`}>
                               {a.type === 'payment' ? <DollarSign className="h-4 w-4" /> : a.type === 'stock' ? <Package className="h-4 w-4" /> : <Receipt className="h-4 w-4" />}
                             </div>
-                            <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{a.description}</p>{a.customerName && <p className="text-xs text-gray-500">{a.customerName}</p>}<p className="text-xs text-gray-500">{new Date(a.date).toLocaleDateString('en-PK')}</p></div>
+                            <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{a.description}</p>{a.customerName && <p className="text-xs text-gray-400">{a.customerName}</p>}<p className="text-xs text-gray-400">{new Date(a.date).toLocaleDateString('en-PK')}</p></div>
                           </div>
                         ))}
                         {dashboardData.recentActivity.length === 0 && <p className="text-center text-gray-400 py-8">{t('noActivityYet')}</p>}
@@ -1192,49 +991,21 @@ export function AppContent() {
               {/* WASOOLI */}
               {activeTab === 'wasooli' && (() => {
                 const filteredPayments = payments.filter(p => (!dateFrom || p.date >= dateFrom) && (!dateTo || p.date <= dateTo));
-                const halfPaidCustomers = customers.filter(c => c.totalPaid > 0 && c.totalRemaining > 0);
-                const fullyUnpaidCustomers = customers.filter(c => c.totalPaid <= 0 && c.totalRemaining > 0);
                 return (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-green-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('totalWasooliReceived')}</span></div><p className="text-xl font-bold text-green-600">{PKR(filteredPayments.reduce((s, p) => s + p.amount, 0))}</p></CardContent></Card>
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><AlertCircle className="h-4 w-4 text-red-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('pendingPaymentsLabel')}</span></div><p className="text-xl font-bold text-red-600">{PKR(customers.reduce((s, c) => s + c.totalRemaining, 0))}</p></CardContent></Card>
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Calendar className="h-4 w-4 text-blue-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('thisMonthWasooli')}</span></div><p className="text-xl font-bold text-blue-600">{PKR(filteredPayments.filter(p => { const d = new Date(p.date); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, p) => s + p.amount, 0))}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-green-500" /><span className="text-sm text-gray-500">Total Wasooli Received</span></div><p className="text-xl font-bold text-green-600">{PKR(filteredPayments.reduce((s, p) => s + p.amount, 0))}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><AlertCircle className="h-4 w-4 text-red-500" /><span className="text-sm text-gray-500">Pending Payments</span></div><p className="text-xl font-bold text-red-600">{PKR(customers.reduce((s, c) => s + c.totalRemaining, 0))}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Calendar className="h-4 w-4 text-blue-500" /><span className="text-sm text-gray-500">This Month Wasooli</span></div><p className="text-xl font-bold text-blue-600">{PKR(filteredPayments.filter(p => { const d = new Date(p.date); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, p) => s + p.amount, 0))}</p></CardContent></Card>
                   </div>
                   <Button className="h-12 text-base px-6 bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingPayment(null); resetPaymentForm(); setShowPaymentDialog(true); }}><Plus className="h-5 w-5 mr-2" />{t('addPayment')}</Button>
-
-                  {/* Thora Udhar (Half Paid) Customers */}
-                  {halfPaidCustomers.length > 0 && (
-                  <Card className="shadow-sm border-amber-200 dark:border-amber-800"><CardHeader><CardTitle className="text-lg flex items-center gap-2"><AlertCircle className="h-5 w-5 text-amber-500" />{t('halfPaid')}</CardTitle></CardHeader><CardContent>
+                  <Card className="shadow-sm"><CardHeader><CardTitle className="text-lg flex items-center gap-2"><AlertCircle className="h-5 w-5 text-red-500" />{t('unpaidCustomers')}</CardTitle></CardHeader><CardContent>
                     <div className="space-y-3">
-                      {halfPaidCustomers.map(c => {
-                        const cStocks = stockRecords.filter(s => s.customerId === c.id);
-                        const totalAmount = c.totalPaid + c.totalRemaining;
-                        const paidPercent = totalAmount > 0 ? Math.round((c.totalPaid / totalAmount) * 100) : 0;
-                        return (
-                          <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-amber-200 dark:border-amber-800 gap-3 bg-amber-50/50 dark:bg-amber-900/10">
-                            <div className="flex-1"><div className="flex items-center gap-2"><p className="font-bold">{c.name}</p><Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 text-xs">{t('halfPaid')}</Badge></div><p className="text-sm text-gray-500">{c.phone} • {language === 'ur' ? 'ادا شدہ' : 'Paid'}: {PKR(c.totalPaid)} ({paidPercent}%)</p><Progress value={paidPercent} className="h-1.5 mt-1" /></div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-amber-600 font-bold text-lg">{PKR(c.totalRemaining)}</span>
-                              <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => openWhatsApp(c.phone, c.name, c.totalRemaining)}><MessageCircle className="h-4 w-4 mr-1" />{t('remind')}</Button>
-                              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingPayment(null); resetPaymentForm(); setPaymentForm(f => ({ ...f, customerId: c.id })); setShowPaymentDialog(true); }}><Plus className="h-3 w-3 mr-1" />{t('addPayment')}</Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent></Card>
-                  )}
-
-                  {/* Mukammal Udhar (Not Paid) Customers */}
-                  {fullyUnpaidCustomers.length > 0 && (
-                  <Card className="shadow-sm border-red-200 dark:border-red-800"><CardHeader><CardTitle className="text-lg flex items-center gap-2"><AlertCircle className="h-5 w-5 text-red-500" />{t('notPaid')}</CardTitle></CardHeader><CardContent>
-                    <div className="space-y-3">
-                      {fullyUnpaidCustomers.map(c => {
+                      {customers.filter(c => c.totalRemaining > 0).map(c => {
                         const cStocks = stockRecords.filter(s => s.customerId === c.id && s.remainingAmount > 0);
                         return (
-                          <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-red-200 dark:border-red-800 gap-3 bg-red-50/50 dark:bg-red-900/10">
-                            <div><div className="flex items-center gap-2"><p className="font-bold">{c.name}</p><Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 text-xs">{t('unpaid')}</Badge></div><p className="text-sm text-gray-500">{c.phone} • {cStocks.length} {t('itemsPending')}</p></div>
+                          <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border gap-3">
+                            <div><p className="font-bold">{c.name}</p><p className="text-sm text-gray-500">{c.phone} • {cStocks.length} {t('itemsPending')}</p></div>
                             <div className="flex items-center gap-3">
                               <span className="text-red-600 font-bold text-lg">{PKR(c.totalRemaining)}</span>
                               <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => openWhatsApp(c.phone, c.name, c.totalRemaining)}><MessageCircle className="h-4 w-4 mr-1" />{t('remind')}</Button>
@@ -1243,13 +1014,9 @@ export function AppContent() {
                           </div>
                         );
                       })}
+                      {customers.filter(c => c.totalRemaining > 0).length === 0 && <p className="text-center text-gray-400 py-4">{t('allPaymentsReceived')}</p>}
                     </div>
                   </CardContent></Card>
-                  )}
-
-                  {halfPaidCustomers.length === 0 && fullyUnpaidCustomers.length === 0 && (
-                  <Card className="shadow-sm"><CardContent className="p-8 text-center"><CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500" /><p className="text-lg font-medium text-green-600">{t('allPaymentsReceived')}</p></CardContent></Card>
-                  )}
                   <Card className="shadow-sm"><CardHeader><CardTitle className="text-lg flex items-center gap-2"><CreditCard className="h-5 w-5 text-green-500" />{t('paymentHistory')}</CardTitle></CardHeader><CardContent>
                     <ScrollArea className="max-h-96"><div className="space-y-3">
                       {filteredPayments.map(p => (
@@ -1268,9 +1035,9 @@ export function AppContent() {
               {activeTab === 'bank' && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-green-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('totalBankIn')}</span></div><p className="text-xl font-bold text-green-600">{PKR(bankPayments.filter(b => b.paymentAmount > 0).reduce((s, b) => s + b.paymentAmount, 0))}</p></CardContent></Card>
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><CreditCard className="h-4 w-4 text-blue-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('totalTransactions')}</span></div><p className="text-xl font-bold text-blue-600">{bankPayments.length}</p></CardContent></Card>
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Building2 className="h-4 w-4 text-orange-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('banksUsed')}</span></div><p className="text-xl font-bold text-orange-600">{new Set(bankPayments.map(b => b.bankName).filter(Boolean)).size}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-green-500" /><span className="text-sm text-gray-500">Total Bank In</span></div><p className="text-xl font-bold text-green-600">{PKR(bankPayments.filter(b => b.paymentAmount > 0).reduce((s, b) => s + b.paymentAmount, 0))}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><CreditCard className="h-4 w-4 text-blue-500" /><span className="text-sm text-gray-500">Total Transactions</span></div><p className="text-xl font-bold text-blue-600">{bankPayments.length}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Building2 className="h-4 w-4 text-orange-500" /><span className="text-sm text-gray-500">Banks Used</span></div><p className="text-xl font-bold text-orange-600">{new Set(bankPayments.map(b => b.bankName).filter(Boolean)).size}</p></CardContent></Card>
                   </div>
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                     <Button className="h-12 text-base px-6 bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingBankPayment(null); resetBankForm(); setShowBankPaymentDialog(true); }}><Plus className="h-5 w-5 mr-2" />{t('addBankPayment')}</Button>
@@ -1307,9 +1074,9 @@ export function AppContent() {
               {activeTab === 'expenses' && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Receipt className="h-4 w-4 text-red-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('totalExpenses')}</span></div><p className="text-xl font-bold text-red-600">{PKR(expenses.reduce((s, e) => s + e.amount, 0))}</p></CardContent></Card>
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Calendar className="h-4 w-4 text-orange-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('thisMonthExpenses')}</span></div><p className="text-xl font-bold text-orange-600">{PKR(expenses.filter(e => { const d = new Date(e.date); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, e) => s + e.amount, 0))}</p></CardContent></Card>
-                    <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Filter className="h-4 w-4 text-blue-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('categoriesUsed')}</span></div><p className="text-xl font-bold text-blue-600">{new Set(expenses.map(e => e.category)).size}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Receipt className="h-4 w-4 text-red-500" /><span className="text-sm text-gray-500">Total Expenses</span></div><p className="text-xl font-bold text-red-600">{PKR(expenses.reduce((s, e) => s + e.amount, 0))}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Calendar className="h-4 w-4 text-orange-500" /><span className="text-sm text-gray-500">This Month</span></div><p className="text-xl font-bold text-orange-600">{PKR(expenses.filter(e => { const d = new Date(e.date); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, e) => s + e.amount, 0))}</p></CardContent></Card>
+                    <Card className="shadow-sm"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><Filter className="h-4 w-4 text-blue-500" /><span className="text-sm text-gray-500">Categories Used</span></div><p className="text-xl font-bold text-blue-600">{new Set(expenses.map(e => e.category)).size}</p></CardContent></Card>
                   </div>
                   <Button className="h-12 text-base px-6 bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingExpense(null); resetExpenseForm(); setShowExpenseDialog(true); }}><Plus className="h-5 w-5 mr-2" />{t('addExpense')}</Button>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1387,18 +1154,18 @@ export function AppContent() {
                   <Card className="shadow-sm"><CardContent className="p-6 space-y-6">
                     <div className="flex items-center justify-between"><div><h3 className="font-bold text-lg">{t('darkMode')}</h3><p className="text-sm text-gray-500">Light / Dark theme</p></div><Switch checked={darkMode} onCheckedChange={setDarkMode} /></div>
                     <Separator />
-                    <div><h3 className="font-bold text-lg mb-3">{t('customBranding')}</h3>
+                    <div><h3 className="font-bold text-lg mb-3">Custom Branding</h3>
                       <div className="space-y-4">
-                        <div><Label className="text-sm">{t('appNameLabel')}</Label><Input value={branding.appName} onChange={e => setBranding({...branding, appName: e.target.value})} className="mt-1.5 h-11" /></div>
-                        <div><Label className="text-sm">{t('logoLabel')}</Label><Input value={branding.logoUrl || ''} placeholder="e.g. 💼 or https://..." onChange={e => setBranding({...branding, logoUrl: e.target.value})} className="mt-1.5 h-11" /></div>
-                        <div><Label className="text-sm block mb-2">{t('themeColorLabel')}</Label>
+                        <div><Label className="text-sm">Application Name</Label><Input value={branding.appName} onChange={e => setBranding({...branding, appName: e.target.value})} className="mt-1.5 h-11" /></div>
+                        <div><Label className="text-sm">Logo (Emoji or Image URL)</Label><Input value={branding.logoUrl || ''} placeholder="e.g. 💼 or https://..." onChange={e => setBranding({...branding, logoUrl: e.target.value})} className="mt-1.5 h-11" /></div>
+                        <div><Label className="text-sm block mb-2">Theme Color</Label>
                           <div className="flex gap-3">
                             {['#059669', '#2563eb', '#dc2626', '#d97706', '#9333ea', '#0f172a'].map(color => (
                               <button key={color} type="button" onClick={() => setBranding({...branding, primaryColor: color})} className={`w-8 h-8 rounded-full border-2 transition-transform ${branding.primaryColor === color ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} />
                             ))}
                           </div>
                         </div>
-                        <Button className="w-full h-11 text-white font-medium hover:opacity-90 btn-premium" style={{ backgroundColor: branding.primaryColor }} onClick={async () => { if (user) { await store.saveBranding(user.id, branding); try { localStorage.setItem('fintracker_branding', JSON.stringify(branding)); } catch {} toast({ title: t('updated'), description: t('brandingSaved') }); } }}>{t('saveBranding')}</Button>
+                        <Button className="w-full h-11 text-white font-medium hover:opacity-90" style={{ backgroundColor: branding.primaryColor }} onClick={async () => { if (user) { await store.saveBranding(user.id, branding); toast({ title: t('updated'), description: 'Branding preferences saved successfully' }); } }}>Save Branding</Button>
                       </div>
                     </div>
                     <Separator />
@@ -1406,7 +1173,7 @@ export function AppContent() {
                     <Separator />
                     <div><h3 className="font-bold text-lg mb-3">{t('currency')}</h3><Badge className="text-base px-4 py-1">PKR - Pakistani Rupees</Badge></div>
                     <Separator />
-                    <div><h3 className="font-bold text-lg mb-3">{t('dataBackup')}</h3><p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{language === 'ur' ? 'آپ کا ڈیٹا خودکار محفوظ ہوتا ہے۔' : 'Your data is saved automatically.'}</p>
+                    <div><h3 className="font-bold text-lg mb-3">{t('dataBackup')}</h3><p className="text-sm text-gray-500 mb-3">Your data is saved automatically.</p>
                       <div className="flex flex-col gap-2">
                         <Button variant="outline" className="w-full h-11" onClick={handleDownloadBackup}><Download className="h-4 w-4 mr-2" />{t('downloadBackup')}</Button>
                         <div className="relative">
@@ -1465,13 +1232,13 @@ export function AppContent() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-base">{t('itemName')} *</Label>
-              <Input className="h-12 text-base mt-1" list="stock-item-names" value={stockForm.itemName} onChange={e => setStockForm({ ...stockForm, itemName: e.target.value })} placeholder="Type or Select..." />
-              <datalist id="stock-item-names">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
+              <Input className="h-12 text-base mt-1" list="item-names" value={stockForm.itemName} onChange={e => setStockForm({ ...stockForm, itemName: e.target.value })} placeholder="Type or Select..." />
+              <datalist id="item-names">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
             </div>
             <div>
               <Label className="text-base">{t('category')}</Label>
-              <Input className="h-12 text-base mt-1" list="stock-item-categories" value={stockForm.itemCategory} onChange={e => setStockForm({ ...stockForm, itemCategory: e.target.value })} placeholder="Type or Select..." />
-              <datalist id="stock-item-categories">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
+              <Input className="h-12 text-base mt-1" list="item-categories" value={stockForm.itemCategory} onChange={e => setStockForm({ ...stockForm, itemCategory: e.target.value })} placeholder="Type or Select..." />
+              <datalist id="item-categories">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -1544,13 +1311,13 @@ export function AppContent() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-base">{t('itemName')} *</Label>
-              <Input className="h-12 text-base mt-1" list="purchase-item-names" value={purchaseForm.itemName} onChange={e => setPurchaseForm({ ...purchaseForm, itemName: e.target.value })} placeholder="Type or Select..." />
-              <datalist id="purchase-item-names">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
+              <Input className="h-12 text-base mt-1" list="item-names" value={purchaseForm.itemName} onChange={e => setPurchaseForm({ ...purchaseForm, itemName: e.target.value })} placeholder="Type or Select..." />
+              <datalist id="item-names">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
             </div>
             <div>
               <Label className="text-base">{t('category')}</Label>
-              <Input className="h-12 text-base mt-1" list="purchase-item-categories" value={purchaseForm.itemCategory} onChange={e => setPurchaseForm({ ...purchaseForm, itemCategory: e.target.value })} placeholder="Type or Select..." />
-              <datalist id="purchase-item-categories">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
+              <Input className="h-12 text-base mt-1" list="item-categories" value={purchaseForm.itemCategory} onChange={e => setPurchaseForm({ ...purchaseForm, itemCategory: e.target.value })} placeholder="Type or Select..." />
+              <datalist id="item-categories">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -1587,7 +1354,7 @@ export function AppContent() {
               <p><strong>{t('notes')}:</strong> {selectedCustomer.notes || 'N/A'}</p>
             </div>
             <Separator />
-            <div><h3 className="font-bold text-lg mb-3">{t('paymentTimeline')}</h3><div className="space-y-1 mt-4">
+            <div><h3 className="font-bold text-lg mb-3">Complete Timeline (Ledger)</h3><div className="space-y-1 mt-4">
               {(() => {
                 const cStocks = stockRecords.filter(s => s.customerId === selectedCustomer.id).map(s => ({ type: 'sale', date: s.date, createdAt: s.createdAt, title: `Sale: ${s.itemName} (${s.weight} ${s.weightUnit})`, amount: s.totalAmount, record: s }));
                 const cPayments = payments.filter(p => p.customerId === selectedCustomer.id).map(p => ({ type: 'payment', date: p.date, createdAt: p.createdAt, title: p.stockRecordId ? `Payment (Sale Downpayment)` : `Wasooli (${p.paymentMethod})`, amount: p.amount, record: p }));
@@ -1597,7 +1364,7 @@ export function AppContent() {
                 });
                 
                 let balance = 0;
-                if (history.length === 0) return <p className="text-sm text-gray-500 text-center py-4">{t('noTransactionsFound')}</p>;
+                if (history.length === 0) return <p className="text-sm text-gray-400 text-center py-4">No transactions found</p>;
                 return history.map((h, i) => {
                   if (h.type === 'sale') balance += h.amount;
                   else balance -= h.amount;
@@ -1655,7 +1422,7 @@ export function AppContent() {
               <Separator />
               <div className="flex justify-between text-xl"><span className="text-red-600">{t('remaining')}</span><span className="font-bold text-red-600">{PKR(selectedInvoice.remainingAmount)}</span></div>
             </div></div>
-            <div className="flex gap-3"><Button className="flex-1 h-12 btn-premium" style={{ backgroundColor: branding.primaryColor || '#059669' }} onClick={handlePrint}><Printer className="h-4 w-4 mr-2" />{t('printInvoice')}</Button><Button variant="outline" className="flex-1 h-12" onClick={() => setShowInvoiceDialog(false)}>{t('cancel')}</Button></div>
+            <div className="flex gap-3"><Button className="flex-1 h-12 bg-[#00b060] hover:bg-[#009050]" onClick={handlePrint}><Printer className="h-4 w-4 mr-2" />{t('printInvoice')}</Button><Button variant="outline" className="flex-1 h-12" onClick={() => setShowInvoiceDialog(false)}>{t('cancel')}</Button></div>
           </div>
         )}
       </DialogContent></Dialog>
@@ -1676,15 +1443,15 @@ export function AppContent() {
       <Dialog open={!!deleteConf} onOpenChange={(open) => !open && setDeleteConf(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{t('confirmDeletion')}</DialogTitle>
+            <DialogTitle>Confirm Deletion</DialogTitle>
           </DialogHeader>
           <div className="py-2">
-            <p className="text-sm text-gray-600 dark:text-gray-400">{t('confirmDeleteMsg')}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Are you sure you want to delete this record? This action cannot be undone.</p>
           </div>
           <div className="flex justify-end gap-3 mt-4">
-            <Button variant="outline" onClick={() => setDeleteConf(null)}>{t('cancelBtn')}</Button>
-            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
-              {isDeleting ? t('deletingBtn') : t('deleteBtn')}
+            <Button variant="outline" onClick={() => setDeleteConf(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isLoading}>
+              {isLoading ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
         </DialogContent>

@@ -1,23 +1,7 @@
 import { collection, doc, query, where, getDocs, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from './lib/firebase';
-import { auth } from './lib/firebase';
 
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
-
-// Helper to refresh auth token before write operations
-async function refreshAuth(): Promise<boolean> {
-  try {
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      await currentUser.getIdToken(true);
-      return true;
-    }
-    return false;
-  } catch (e) {
-    console.error('Auth refresh failed:', e);
-    return false;
-  }
-}
 
 // ============ AUTH / BRANDING ============
 
@@ -45,7 +29,6 @@ export async function getCustomers(userId: string): Promise<Customer[]> {
 }
 
 export async function createCustomer(data: Partial<Customer> & { userId: string }): Promise<Customer> {
-  await refreshAuth();
   const id = uid();
   const now = new Date().toISOString();
   const customer: Customer = { id, userId: data.userId, name: data.name || '', phone: data.phone || '', city: data.city || '', address: data.address || '', notes: data.notes || '', totalRemaining: 0, totalPaid: 0, lastPaymentDate: null, createdAt: now, updatedAt: now };
@@ -58,7 +41,6 @@ export async function updateCustomer(id: string, data: Partial<Customer>): Promi
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
-  await refreshAuth();
   const customerDoc = await getDoc(doc(db, 'customers', id));
   if (!customerDoc.exists()) return;
   const customer = customerDoc.data() as Customer;
@@ -112,54 +94,6 @@ async function recalcCustomerTotals(customerId: string): Promise<void> {
     lastPaymentDate,
     updatedAt: new Date().toISOString()
   });
-
-  // Also update invoice statuses for this customer's stock records
-  try {
-    const stockIds = stocksSnap.docs.map(d => d.id);
-    if (stockIds.length > 0) {
-      // Get all invoices referencing this customer's stock records
-      const invoicesSnap = await getDocs(query(collection(db, 'invoices'), where('referenceId', 'in', stockIds.length <= 30 ? stockIds : stockIds.slice(0, 30))));
-      const batch = writeBatch(db);
-      let batchCount = 0;
-
-      for (const invDoc of invoicesSnap.docs) {
-        const inv = invDoc.data();
-        const stockRefId = inv.referenceId;
-        const stockDoc = stocksSnap.docs.find(d => d.id === stockRefId);
-        if (stockDoc) {
-          const stockData = stockDoc.data();
-          // Calculate total paid for this specific stock record
-          const stockPayments = payments.filter((p: any) => p.stockRecordId === stockRefId);
-          const stockPaid = stockPayments.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
-          const newRemaining = (stockData.totalAmount || 0) - stockPaid;
-          const newStatus = newRemaining <= 0 ? 'paid' : stockPaid > 0 ? 'partial' : 'unpaid';
-
-          batch.update(invDoc.ref, {
-            paidAmount: stockPaid,
-            remainingAmount: Math.max(0, newRemaining),
-            status: newStatus,
-            updatedAt: new Date().toISOString()
-          });
-          batchCount++;
-
-          // Also update the stock record's paid/remaining
-          batch.update(stockDoc.ref, {
-            paidAmount: stockPaid,
-            remainingAmount: Math.max(0, newRemaining),
-            updatedAt: new Date().toISOString()
-          });
-          batchCount++;
-        }
-      }
-
-      if (batchCount > 0) {
-        await batch.commit();
-      }
-    }
-  } catch (e) {
-    console.error('Failed to update invoice statuses:', e);
-    // Don't throw - customer totals were still updated
-  }
 }
 
 // ============ STOCK RECORDS ============
@@ -182,7 +116,6 @@ export async function getStockRecords(userId: string): Promise<(StockRecord & { 
 }
 
 export async function createStockRecord(data: Partial<StockRecord> & { userId: string }): Promise<StockRecord> {
-  await refreshAuth();
   const id = uid();
   const now = new Date().toISOString();
   const record: StockRecord = { id, userId: data.userId, customerId: data.customerId || '', date: data.date || now.split('T')[0], itemName: data.itemName || '', itemCategory: data.itemCategory || '', weight: data.weight || 0, weightUnit: data.weightUnit || 'KG', pricePerUnit: data.pricePerUnit || 0, totalAmount: data.totalAmount || 0, paidAmount: data.paidAmount || 0, remainingAmount: (data.totalAmount || 0) - (data.paidAmount || 0), notes: data.notes || '', createdAt: now, updatedAt: now };
@@ -254,7 +187,6 @@ export async function updateStockRecord(id: string, data: Partial<StockRecord>):
 }
 
 export async function deleteStockRecord(id: string): Promise<void> {
-  await refreshAuth();
   const recDoc = await getDoc(doc(db, 'stockRecords', id));
   if (!recDoc.exists()) return;
   const rec = recDoc.data() as StockRecord;
@@ -292,7 +224,6 @@ export async function getPayments(userId: string): Promise<(Payment & { customer
 }
 
 export async function createPayment(data: Partial<Payment> & { userId: string }): Promise<Payment> {
-  await refreshAuth();
   const id = uid();
   const now = new Date().toISOString();
   const payment: Payment = { id, userId: data.userId, customerId: data.customerId || '', stockRecordId: data.stockRecordId || null, amount: data.amount || 0, date: data.date || now.split('T')[0], paymentMethod: data.paymentMethod || 'Cash', bankName: data.bankName || '', transactionNote: data.transactionNote || '', createdAt: now, updatedAt: now };
@@ -339,7 +270,6 @@ export async function updatePayment(id: string, data: Partial<Payment>): Promise
 }
 
 export async function deletePayment(id: string): Promise<void> {
-  await refreshAuth();
   const docRef = doc(db, 'payments', id);
   const oldDoc = await getDoc(docRef);
   if (!oldDoc.exists()) return;

@@ -1,0 +1,202 @@
+{
+  "entities": {
+    "Branding": {
+      "title": "Branding",
+      "description": "App branding preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "appName": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "primaryColor": { "type": "string" }
+      },
+      "required": ["userId", "appName", "primaryColor"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "A customer of the business",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string", "description": "The user this customer belongs to" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "city": { "type": "string" },
+        "address": { "type": "string" },
+        "notes": { "type": "string" },
+        "totalRemaining": { "type": "number" },
+        "totalPaid": { "type": "number" },
+        "lastPaymentDate": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "name", "totalRemaining", "totalPaid", "createdAt", "updatedAt"]
+    },
+    "StockRecord": {
+      "title": "StockRecord",
+      "description": "A record of stock (sale) sent to a customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "date": { "type": "string" },
+        "itemName": { "type": "string" },
+        "itemCategory": { "type": "string" },
+        "weight": { "type": "number" },
+        "weightUnit": { "type": "string" },
+        "pricePerUnit": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "customerId", "createdAt", "updatedAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Wasooli/Payment received from customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "stockRecordId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "bankName": { "type": "string" },
+        "transactionNote": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "customerId", "amount", "createdAt", "updatedAt"]
+    },
+    "BankPayment": {
+      "title": "BankPayment",
+      "description": "Bank transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "paymentDate": { "type": "string" },
+        "paymentAmount": { "type": "number" },
+        "bankName": { "type": "string" },
+        "accountType": { "type": "string" },
+        "transactionNote": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "paymentAmount", "createdAt", "updatedAt"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "General business expense",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "amount", "createdAt", "updatedAt"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "Purchase from suppliers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "supplierName": { "type": "string" },
+        "supplierPhone": { "type": "string" },
+        "supplierCity": { "type": "string" },
+        "date": { "type": "string" },
+        "itemName": { "type": "string" },
+        "itemCategory": { "type": "string" },
+        "weight": { "type": "number" },
+        "weightUnit": { "type": "string" },
+        "pricePerUnit": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "totalAmount", "createdAt", "updatedAt"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Invoices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "type": { "type": "string" },
+        "referenceId": { "type": "string" },
+        "partyName": { "type": "string" },
+        "partyPhone": { "type": "string" },
+        "partyCity": { "type": "string" },
+        "itemName": { "type": "string" },
+        "itemCategory": { "type": "string" },
+        "weight": { "type": "number" },
+        "weightUnit": { "type": "string" },
+        "pricePerUnit": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "status": { "type": "string" },
+        "notes": { "type": "string" },
+        "date": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/branding/{brandingId}": {
+      "schema": { "$ref": "Branding" },
+      "description": "User branding"
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "Customer" },
+      "description": "A user's customers"
+    },
+    "/stockRecords/{stockRecordId}": {
+      "schema": { "$ref": "StockRecord" },
+      "description": "A user's stock records"
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "Payment" },
+      "description": "A user's payments"
+    },
+    "/bankPayments/{bankPaymentId}": {
+      "schema": { "$ref": "BankPayment" },
+      "description": "A user's bank payments"
+    },
+    "/expenses/{expenseId}": {
+      "schema": { "$ref": "Expense" },
+      "description": "A user's expenses"
+    },
+    "/purchases/{purchaseId}": {
+      "schema": { "$ref": "Purchase" },
+      "description": "A user's purchases from suppliers"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": { "$ref": "Invoice" },
+      "description": "A user's invoices"
+    }
+  }
+}
