@@ -58,10 +58,13 @@ const tr: Record<string, Record<Lang, string>> = {
 export function AppContent() {
   const [darkMode, setDarkMode] = useState(() => {
     const s = localStorage.getItem('fintracker_dark');
-    if (s === 'true') document.documentElement.classList.add('dark');
-    return s === 'true';
+    // Default to dark mode if no preference saved
+    const isDark = s === null ? true : s === 'true';
+    if (isDark) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+    return isDark;
   });
-  const [language, setLanguage] = useState<Lang>(() => (localStorage.getItem('fintracker_lang') as Lang) || 'ur');
+  const [language, setLanguage] = useState<Lang>(() => (localStorage.getItem('fintracker_lang') as Lang) || 'en');
   const t = useCallback((key: string): string => (tr[key] && tr[key][language]) || key, [language]);
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('fintracker_user'));
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login');
@@ -158,6 +161,14 @@ export function AppContent() {
   const [filterTypeBank, setFilterTypeBank] = useState('All');
   const [filterTypeInvoice, setFilterTypeInvoice] = useState('All');
   const [filterStatus, setFilterStatus] = useState('all');
+  // Wasooli filters
+  const [wasooliDateFrom, setWasooliDateFrom] = useState('');
+  const [wasooliDateTo, setWasooliDateTo] = useState('');
+  const [wasooliNameFilter, setWasooliNameFilter] = useState('');
+  // Payment History (Bank Records) filters
+  const [payHistDateFrom, setPayHistDateFrom] = useState('');
+  const [payHistDateTo, setPayHistDateTo] = useState('');
+  const [payHistNameFilter, setPayHistNameFilter] = useState('');
   const [calcDisplay, setCalcDisplay] = useState('0');
   const [calcPrev, setCalcPrev] = useState<number | null>(null);
   const [calcOp, setCalcOp] = useState<string | null>(null);
@@ -1191,7 +1202,11 @@ export function AppContent() {
 
               {/* WASOOLI */}
               {activeTab === 'wasooli' && (() => {
-                const filteredPayments = payments.filter(p => (!dateFrom || p.date >= dateFrom) && (!dateTo || p.date <= dateTo));
+                const filteredPayments = payments.filter(p => {
+                  const dateOk = (!wasooliDateFrom || p.date >= wasooliDateFrom) && (!wasooliDateTo || p.date <= wasooliDateTo);
+                  const nameOk = !wasooliNameFilter || (p.customer?.name || '').toLowerCase().includes(wasooliNameFilter.toLowerCase());
+                  return dateOk && nameOk;
+                });
                 const halfPaidCustomers = customers.filter(c => c.totalPaid > 0 && c.totalRemaining > 0);
                 const fullyUnpaidCustomers = customers.filter(c => c.totalPaid <= 0 && c.totalRemaining > 0);
                 return (
@@ -1251,6 +1266,13 @@ export function AppContent() {
                   <Card className="shadow-sm"><CardContent className="p-8 text-center"><CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500" /><p className="text-lg font-medium text-green-600">{t('allPaymentsReceived')}</p></CardContent></Card>
                   )}
                   <Card className="shadow-sm"><CardHeader><CardTitle className="text-lg flex items-center gap-2"><CreditCard className="h-5 w-5 text-green-500" />{t('paymentHistory')}</CardTitle></CardHeader><CardContent>
+                    {/* Payment History Filters */}
+                    <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <Input placeholder="Filter by name..." value={wasooliNameFilter} onChange={e => setWasooliNameFilter(e.target.value)} className="h-8 text-sm w-40" />
+                      <Input type="date" value={wasooliDateFrom} onChange={e => setWasooliDateFrom(e.target.value)} className="h-8 text-sm w-36" />
+                      <Input type="date" value={wasooliDateTo} onChange={e => setWasooliDateTo(e.target.value)} className="h-8 text-sm w-36" />
+                      {(wasooliNameFilter || wasooliDateFrom || wasooliDateTo) && <Button size="sm" variant="ghost" className="h-8 text-xs text-red-500" onClick={() => { setWasooliNameFilter(''); setWasooliDateFrom(''); setWasooliDateTo(''); }}>Clear</Button>}
+                    </div>
                     <ScrollArea className="max-h-96"><div className="space-y-3">
                       {filteredPayments.map(p => (
                         <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border">
@@ -1274,6 +1296,12 @@ export function AppContent() {
                   </div>
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                     <Button className="h-12 text-base px-6 bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingBankPayment(null); resetBankForm(); setShowBankPaymentDialog(true); }}><Plus className="h-5 w-5 mr-2" />{t('addBankPayment')}</Button>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Input placeholder="Filter by name..." value={payHistNameFilter} onChange={e => setPayHistNameFilter(e.target.value)} className="h-8 text-sm w-36" />
+                      <Input type="date" value={payHistDateFrom} onChange={e => setPayHistDateFrom(e.target.value)} className="h-8 text-sm w-36" />
+                      <Input type="date" value={payHistDateTo} onChange={e => setPayHistDateTo(e.target.value)} className="h-8 text-sm w-36" />
+                      {(payHistNameFilter || payHistDateFrom || payHistDateTo) && <Button size="sm" variant="ghost" className="h-8 text-xs text-red-500" onClick={() => { setPayHistNameFilter(''); setPayHistDateFrom(''); setPayHistDateTo(''); }}>Clear</Button>}
+                    </div>
                     <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
                       {['All', 'Bank Transfer', 'Cheque', 'Online'].map(f => (
                         <Button key={f} size="sm" variant={filterTypeBank === f ? 'default' : 'ghost'} className={filterTypeBank === f ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'} onClick={() => setFilterTypeBank(f)}>{f === 'All' ? 'All Records' : f}</Button>
@@ -1281,7 +1309,12 @@ export function AppContent() {
                     </div>
                   </div>
                   <div className="grid gap-3">
-                    {bankPayments.filter(bp => filterTypeBank === 'All' ? true : bp.paymentMethod === filterTypeBank).map(bp => (
+                    {bankPayments.filter(bp => {
+                      const typeOk = filterTypeBank === 'All' ? true : bp.paymentMethod === filterTypeBank;
+                      const nameOk = !payHistNameFilter || (bp.customer?.name || '').toLowerCase().includes(payHistNameFilter.toLowerCase());
+                      const dateOk = (!payHistDateFrom || bp.paymentDate >= payHistDateFrom) && (!payHistDateTo || bp.paymentDate <= payHistDateTo);
+                      return typeOk && nameOk && dateOk;
+                    }).map(bp => (
                       <Card key={bp.id} className="shadow-sm"><CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div>

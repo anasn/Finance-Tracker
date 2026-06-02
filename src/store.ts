@@ -54,6 +54,7 @@ export async function createCustomer(data: Partial<Customer> & { userId: string 
 }
 
 export async function updateCustomer(id: string, data: Partial<Customer>): Promise<void> {
+  await refreshAuth();
   await updateDoc(doc(db, 'customers', id), { ...data, updatedAt: new Date().toISOString() });
 }
 
@@ -117,18 +118,26 @@ async function recalcCustomerTotals(customerId: string): Promise<void> {
   try {
     const stockIds = stocksSnap.docs.map(d => d.id);
     if (stockIds.length > 0) {
-      // Get all invoices referencing this customer's stock records
-      const invoicesSnap = await getDocs(query(collection(db, 'invoices'), where('referenceId', 'in', stockIds.length <= 30 ? stockIds : stockIds.slice(0, 30))));
-      const batch = writeBatch(db);
+      // Process stockIds in chunks of 30 (Firestore 'in' query limit)
+      const chunkSize = 30;
+      const allInvoiceDocs: any[] = [];
+      for (let i = 0; i < stockIds.length; i += chunkSize) {
+        const chunk = stockIds.slice(i, i + chunkSize);
+        const invoicesSnap = await getDocs(query(collection(db, 'invoices'), where('referenceId', 'in', chunk)));
+        allInvoiceDocs.push(...invoicesSnap.docs);
+      }
+
+      // Commit in batches of 400 to stay well under the 500 write limit
+      const batchWriteSize = 400;
+      let batch = writeBatch(db);
       let batchCount = 0;
 
-      for (const invDoc of invoicesSnap.docs) {
+      for (const invDoc of allInvoiceDocs) {
         const inv = invDoc.data();
         const stockRefId = inv.referenceId;
         const stockDoc = stocksSnap.docs.find(d => d.id === stockRefId);
         if (stockDoc) {
           const stockData = stockDoc.data();
-          // Calculate total paid for this specific stock record
           const stockPayments = payments.filter((p: any) => p.stockRecordId === stockRefId);
           const stockPaid = stockPayments.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
           const newRemaining = (stockData.totalAmount || 0) - stockPaid;
@@ -142,13 +151,18 @@ async function recalcCustomerTotals(customerId: string): Promise<void> {
           });
           batchCount++;
 
-          // Also update the stock record's paid/remaining
           batch.update(stockDoc.ref, {
             paidAmount: stockPaid,
             remainingAmount: Math.max(0, newRemaining),
             updatedAt: new Date().toISOString()
           });
           batchCount++;
+
+          if (batchCount >= batchWriteSize) {
+            await batch.commit();
+            batch = writeBatch(db);
+            batchCount = 0;
+          }
         }
       }
 
@@ -227,6 +241,7 @@ export async function createStockRecord(data: Partial<StockRecord> & { userId: s
 }
 
 export async function updateStockRecord(id: string, data: Partial<StockRecord>): Promise<void> {
+  await refreshAuth();
   const oldDoc = await getDoc(doc(db, 'stockRecords', id));
   if (!oldDoc.exists()) return;
   const oldData = oldDoc.data() as StockRecord;
@@ -316,6 +331,7 @@ export async function createPayment(data: Partial<Payment> & { userId: string })
 }
 
 export async function updatePayment(id: string, data: Partial<Payment>): Promise<void> {
+  await refreshAuth();
   const docRef = doc(db, 'payments', id);
   const oldDoc = await getDoc(docRef);
   if (!oldDoc.exists()) return;
@@ -386,10 +402,12 @@ export async function createBankPayment(data: Partial<BankPayment> & { userId: s
 }
 
 export async function updateBankPayment(id: string, data: Partial<BankPayment>): Promise<void> {
+  await refreshAuth();
   await updateDoc(doc(db, 'bankPayments', id), { ...data, updatedAt: new Date().toISOString() });
 }
 
 export async function deleteBankPayment(id: string): Promise<void> {
+  await refreshAuth();
   await deleteDoc(doc(db, 'bankPayments', id));
 }
 
@@ -421,10 +439,12 @@ export async function createExpense(data: Partial<Expense> & { userId: string })
 }
 
 export async function updateExpense(id: string, data: Partial<Expense>): Promise<void> {
+  await refreshAuth();
   await updateDoc(doc(db, 'expenses', id), { ...data, updatedAt: new Date().toISOString() });
 }
 
 export async function deleteExpense(id: string): Promise<void> {
+  await refreshAuth();
   const batch = writeBatch(db);
   batch.delete(doc(db, 'expenses', id));
   const invQ = await getDocs(query(collection(db, 'invoices'), where('referenceId', '==', id)));
@@ -468,6 +488,7 @@ export async function createPurchase(data: Partial<Purchase> & { userId: string 
 }
 
 export async function updatePurchase(id: string, data: Partial<Purchase>): Promise<void> {
+  await refreshAuth();
   const dRef = doc(db, 'purchases', id);
   const oldDoc = await getDoc(dRef);
   if (!oldDoc.exists()) return;
@@ -477,6 +498,7 @@ export async function updatePurchase(id: string, data: Partial<Purchase>): Promi
 }
 
 export async function deletePurchase(id: string): Promise<void> {
+  await refreshAuth();
   const batch = writeBatch(db);
   batch.delete(doc(db, 'purchases', id));
   const invQ = await getDocs(query(collection(db, 'invoices'), where('referenceId', '==', id)));
@@ -495,6 +517,7 @@ export async function getInvoices(userId: string): Promise<Invoice[]> {
 }
 
 export async function deleteInvoice(id: string): Promise<void> {
+  await refreshAuth();
   await deleteDoc(doc(db, 'invoices', id));
 }
 
@@ -544,10 +567,12 @@ export async function getDashboardData(userId: string, dateFrom?: string, dateTo
   const thisYear = now.getFullYear();
   
   const totalMoneyReceived = payments.reduce((s, p) => s + p.amount, 0);
-  const totalRemainingMoney = allCustomers.reduce((s, c) => s + c.totalRemaining, 0);
+  // totalRemainingMoney should always reflect real-time outstanding — use allCustomers (unfiltered)
+  const totalRemainingMoney = allCustomers.reduce((s, c) => s + (c.totalRemaining || 0), 0);
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const todayWasooli = payments.filter(p => p.date === today).reduce((s, p) => s + p.amount, 0);
-  const monthWasooli = payments.filter(p => { const d = new Date(p.date); return d.getMonth() === thisMonth && d.getFullYear() === thisYear; }).reduce((s, p) => s + p.amount, 0);
+  // todayWasooli and monthWasooli always from real-time unfiltered pays
+  const todayWasooli = pays.filter(p => p.date === today).reduce((s, p) => s + p.amount, 0);
+  const monthWasooli = pays.filter(p => { const d = new Date(p.date); return d.getMonth() === thisMonth && d.getFullYear() === thisYear; }).reduce((s, p) => s + p.amount, 0);
   
   const pendingPayments = allCustomers.filter(c => c.totalRemaining > 0).length;
   const paidPayments = allCustomers.filter(c => c.totalRemaining <= 0).length;
