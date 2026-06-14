@@ -312,6 +312,10 @@ export async function createStockRecord(data: any) {
   const paidAmount = parseFloat(data.paidAmount) || 0;
   const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
+  const batch = writeBatch(db);
+  const stockRef = doc(collection(db, 'stockRecords'));
+  const stockRecordId = stockRef.id;
+
   const docData = {
     ...data,
     userId,
@@ -321,13 +325,83 @@ export async function createStockRecord(data: any) {
     createdAt: now(),
     updatedAt: now(),
   };
+  batch.set(stockRef, docData);
 
-  const docRef = await addDoc(collection(db, 'stockRecords'), docData);
+  // If paidAmount > 0, auto-create a payment
+  if (paidAmount > 0) {
+    const paymentRef = doc(collection(db, 'payments'));
+    const pm = data.paymentMethod || 'Cash';
+    const bn = data.bankName || '';
+    batch.set(paymentRef, {
+      userId,
+      customerId: data.customerId,
+      stockRecordId,
+      amount: paidAmount,
+      paymentMethod: pm,
+      bankName: bn,
+      transactionNote: `Stock Sale: ${data.itemName || ''}`,
+      date: data.date || new Date().toISOString().split('T')[0],
+      createdAt: now(),
+      updatedAt: now()
+    });
+
+    if (pm !== 'Cash' && bn) {
+       const bankRef = doc(collection(db, 'bankPayments'));
+       batch.set(bankRef, {
+         userId,
+         customerId: data.customerId,
+         paymentDate: data.date || new Date().toISOString().split('T')[0],
+         paymentAmount: paidAmount,
+         bankName: bn,
+         accountType: pm,
+         paymentMethod: pm,
+         transactionNote: `Stock Sale: ${data.itemName || ''}`,
+         createdAt: now(),
+         updatedAt: now()
+       });
+    }
+  }
 
   // Auto-create invoice
-  await _createInvoiceForStock({ id: docRef.id, ...docData });
+  const invRef = doc(collection(db, 'invoices'));
+  const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+  let partyName = '', partyPhone = '', partyCity = '';
+  if (docData.customerId) {
+    const custDoc = await getDoc(doc(db, 'customers', docData.customerId));
+    if (custDoc.exists()) {
+      const c = custDoc.data() as any;
+      partyName = c.name || '';
+      partyPhone = c.phone || '';
+      partyCity = c.city || '';
+    }
+  }
 
-  return { id: docRef.id, ...docData };
+  batch.set(invRef, {
+    userId,
+    invoiceNumber,
+    type: 'sale',
+    referenceId: stockRecordId,
+    partyName,
+    partyPhone,
+    partyCity,
+    itemName: data.itemName || '',
+    itemCategory: data.itemCategory || '',
+    weight: data.weight || 0,
+    weightUnit: data.weightUnit || 'KG',
+    pricePerUnit: data.pricePerUnit || 0,
+    totalAmount,
+    paidAmount,
+    remainingAmount: Math.max(0, totalAmount - paidAmount),
+    status: (totalAmount - paidAmount) <= 0 ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid',
+    notes: data.notes || '',
+    date: data.date || new Date().toISOString().split('T')[0],
+    createdAt: now(),
+    updatedAt: now(),
+  });
+
+  await batch.commit();
+
+  return { id: stockRecordId, ...docData };
 }
 
 export async function updateStockRecord(id: string, data: any) {
@@ -377,6 +451,10 @@ export async function getPayments(userId: string) {
 
 export async function createPayment(data: any) {
   const userId = getUserId() || data.userId;
+  const batch = writeBatch(db);
+  const paymentRef = doc(collection(db, 'payments'));
+  const paymentId = paymentRef.id;
+
   const docData = {
     ...data,
     userId,
@@ -384,8 +462,30 @@ export async function createPayment(data: any) {
     createdAt: now(),
     updatedAt: now(),
   };
-  const docRef = await addDoc(collection(db, 'payments'), docData);
-  return { id: docRef.id, ...docData };
+  batch.set(paymentRef, docData);
+
+  const pm = data.paymentMethod || 'Cash';
+  const bn = data.bankName || '';
+
+  if (pm !== 'Cash' && bn) {
+    const bankRef = doc(collection(db, 'bankPayments'));
+    batch.set(bankRef, {
+      userId,
+      customerId: data.customerId,
+      paymentDate: data.date || new Date().toISOString().split('T')[0],
+      paymentAmount: data.amount || 0,
+      bankName: bn,
+      accountType: pm,
+      paymentMethod: pm,
+      transactionNote: data.transactionNote || `Payment Received`,
+      createdAt: now(),
+      updatedAt: now(),
+    });
+  }
+
+  await batch.commit();
+
+  return { id: paymentId, ...docData };
 }
 
 export async function updatePayment(id: string, data: any) {
@@ -451,14 +551,38 @@ export async function getExpenses(userId: string) {
 
 export async function createExpense(data: any) {
   const userId = getUserId() || data.userId;
+  const batch = writeBatch(db);
+  const expenseRef = doc(collection(db, 'expenses'));
+  const expenseId = expenseRef.id;
+
   const docData = {
     ...data,
     userId,
     createdAt: now(),
     updatedAt: now(),
   };
-  const docRef = await addDoc(collection(db, 'expenses'), docData);
-  return { id: docRef.id, ...docData };
+  batch.set(expenseRef, docData);
+
+  const pm = data.paymentMethod || 'Cash';
+  const bn = data.bankName || '';
+
+  if (pm !== 'Cash' && bn) {
+    const bankRef = doc(collection(db, 'bankPayments'));
+    batch.set(bankRef, {
+      userId,
+      paymentDate: data.date || new Date().toISOString().split('T')[0],
+      paymentAmount: data.amount || 0,
+      bankName: bn,
+      accountType: pm,
+      paymentMethod: pm,
+      transactionNote: `Expense: ${data.description || ''}`,
+      createdAt: now(),
+      updatedAt: now()
+    });
+  }
+
+  await batch.commit();
+  return { id: expenseId, ...docData };
 }
 
 export async function updateExpense(id: string, data: any) {
@@ -490,6 +614,10 @@ export async function createPurchase(data: any) {
   const paidAmount = parseFloat(data.paidAmount) || 0;
   const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
+  const batch = writeBatch(db);
+  const purchaseRef = doc(collection(db, 'purchases'));
+  const purchaseId = purchaseRef.id;
+
   const docData = {
     ...data,
     userId,
@@ -499,8 +627,70 @@ export async function createPurchase(data: any) {
     createdAt: now(),
     updatedAt: now(),
   };
-  const docRef = await addDoc(collection(db, 'purchases'), docData);
-  return { id: docRef.id, ...docData };
+  batch.set(purchaseRef, docData);
+
+  // If paidAmount > 0, auto-create an expense
+  if (paidAmount > 0) {
+    const expenseRef = doc(collection(db, 'expenses'));
+    const pm = data.paymentMethod || 'Cash';
+    const bn = data.bankName || '';
+    batch.set(expenseRef, {
+      userId,
+      amount: paidAmount,
+      description: `Purchase: ${data.itemName || ''}`,
+      category: 'Purchase',
+      paymentMethod: pm,
+      bankName: bn,
+      date: data.date || new Date().toISOString().split('T')[0],
+      createdAt: now(),
+      updatedAt: now()
+    });
+
+    if (pm !== 'Cash' && bn) {
+       const bankRef = doc(collection(db, 'bankPayments'));
+       batch.set(bankRef, {
+         userId,
+         paymentDate: data.date || new Date().toISOString().split('T')[0],
+         paymentAmount: paidAmount,
+         bankName: bn,
+         accountType: pm,
+         paymentMethod: pm,
+         transactionNote: `Purchase Expense: ${data.itemName || ''}`,
+         createdAt: now(),
+         updatedAt: now()
+       });
+    }
+  }
+
+  // Auto-create invoice
+  const invRef = doc(collection(db, 'invoices'));
+  const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+  batch.set(invRef, {
+    userId,
+    invoiceNumber,
+    type: 'purchase',
+    referenceId: purchaseId,
+    partyName: data.sellerName || '',
+    partyPhone: '',
+    partyCity: '',
+    itemName: data.itemName || '',
+    itemCategory: data.itemCategory || '',
+    weight: data.weight || 0,
+    weightUnit: data.weightUnit || 'KG',
+    pricePerUnit: data.pricePerUnit || 0,
+    totalAmount,
+    paidAmount,
+    remainingAmount: Math.max(0, totalAmount - paidAmount),
+    status: (totalAmount - paidAmount) <= 0 ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid',
+    notes: data.notes || '',
+    date: data.date || new Date().toISOString().split('T')[0],
+    createdAt: now(),
+    updatedAt: now(),
+  });
+
+  await batch.commit();
+
+  return { id: purchaseId, ...docData };
 }
 
 export async function updatePurchase(id: string, data: any) {
@@ -509,7 +699,10 @@ export async function updatePurchase(id: string, data: any) {
   const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
   const ref = doc(db, 'purchases', id);
-  await updateDoc(ref, { ...data, totalAmount, paidAmount, remainingAmount, updatedAt: now() });
+  const updateData = { ...data, totalAmount, paidAmount, remainingAmount, updatedAt: now() };
+  await updateDoc(ref, updateData);
+  
+  await _updateInvoiceForRecord(id, updateData);
 }
 
 export async function deletePurchase(id: string): Promise<void> {
