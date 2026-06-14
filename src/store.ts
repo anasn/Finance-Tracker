@@ -6,17 +6,10 @@ const uid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(
 
 // Helper to refresh auth token before write operations
 async function refreshAuth(): Promise<boolean> {
-  try {
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      await currentUser.getIdToken(true);
-      return true;
-    }
-    return false;
-  } catch (e) {
-    console.error('Auth refresh failed:', e);
-    return false;
-  }
+  // Firebase SDK handles token refresh automatically in the background.
+  // Forcing getIdToken(true) blocks operations for 5-15 seconds.
+  // Returning true immediately fixes the extreme delay.
+  return true;
 }
 
 // ============ AUTH / BRANDING ============

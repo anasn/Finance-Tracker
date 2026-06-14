@@ -6,7 +6,7 @@ import {
   FileText, TrendingUp, TrendingDown, DollarSign, Clock, CheckCircle2,
   XCircle, AlertCircle, ChevronRight, Download, Upload, MessageCircle, Moon, Sun,
   Calculator, Printer, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Filter,
-  Calendar, MapPin, Weight, ShoppingCart, CreditCard, Wallet, Chrome, Database, Languages
+  Calendar, MapPin, Weight, ShoppingCart, CreditCard, Wallet, Chrome, Database, Languages, ExternalLink
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { Button } from './components/ui/button';
@@ -383,6 +383,8 @@ export function AppContent() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [showPrintHintDialog, setShowPrintHintDialog] = useState(false);
+  const [isPrintingInvoice, setIsPrintingInvoice] = useState(false);
   const [showCustomerDetail, setShowCustomerDetail] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -734,8 +736,6 @@ export function AppContent() {
     setCalcDisplay(calcDisplay === '0' ? val : calcDisplay + val);
   };
 
-  const [showPrintHintDialog, setShowPrintHintDialog] = useState(false);
-
   const handlePrint = () => {
     try {
       const isIframe = window !== window.parent;
@@ -744,12 +744,35 @@ export function AppContent() {
         return;
       }
       setTimeout(() => {
-        window.focus();
         window.print();
       }, 100);
     } catch (e) {
-      console.error(e);
-      toast({ title: t('error') || 'Error', description: "Failed to open print dialog.", variant: "destructive" });
+      console.error('Print Error:', e);
+      toast({ title: t('error') || 'Error', description: "Failed to print.", variant: "destructive" });
+    }
+  };
+
+  const handleInvoicePrint = () => {
+    try {
+      const isIframe = window !== window.parent;
+      if (isIframe) {
+        setShowPrintHintDialog(true);
+        return;
+      }
+      setIsPrintingInvoice(true);
+      document.body.classList.add('printing-invoice');
+      
+      // Strip dark mode directly globally for printing if needed, or handle in CSS
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          setIsPrintingInvoice(false);
+          document.body.classList.remove('printing-invoice');
+        }, 500);
+      }, 200);
+    } catch (e) {
+      console.error('Invoice Print Error:', e);
+      toast({ title: t('error') || 'Error', description: "Failed to print.", variant: "destructive" });
     }
   };
 
@@ -1826,9 +1849,20 @@ export function AppContent() {
               <Separator />
               <div className="flex justify-between text-xl"><span className="text-red-600">{t('remaining')}</span><span className="font-bold text-red-600">{PKR(selectedInvoice.remainingAmount)}</span></div>
             </div></div>
-            <div className="flex gap-3"><Button className="flex-1 h-12 btn-premium" style={{ backgroundColor: branding.primaryColor || '#059669' }} onClick={handlePrint}><Printer className="h-4 w-4 mr-2" />{t('printInvoice')}</Button><Button variant="outline" className="flex-1 h-12" onClick={() => setShowInvoiceDialog(false)}>{t('cancel')}</Button></div>
+            <div className="flex gap-3 no-print"><Button className="flex-1 h-12 btn-premium" style={{ backgroundColor: branding.primaryColor || '#059669' }} onClick={handleInvoicePrint}><Printer className="h-4 w-4 mr-2" />{t('printInvoice')}</Button><Button variant="outline" className="flex-1 h-12" onClick={() => setShowInvoiceDialog(false)}>{t('cancel')}</Button></div>
           </div>
         )}
+      </DialogContent></Dialog>
+
+      <Dialog open={showPrintHintDialog} onOpenChange={setShowPrintHintDialog}><DialogContent className="max-w-sm"><DialogHeader><DialogTitle>{t('printRestricted')}</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-4">
+          <p className="text-gray-500">{t('printPreviewRestricted')}</p>
+          <div className="bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-lg flex items-start gap-3 border border-emerald-100 dark:border-emerald-800">
+            <ExternalLink className="w-5 h-5 text-emerald-600 mt-0.5" />
+            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">{t('openInNewTabHint')}</p>
+          </div>
+          <Button className="w-full h-11" onClick={() => setShowPrintHintDialog(false)}>{t('close')}</Button>
+        </div>
       </DialogContent></Dialog>
 
       {/* Calculator Dialog */}
@@ -1842,28 +1876,6 @@ export function AppContent() {
           </div>
         </div>
       </DialogContent></Dialog>
-
-      {/* Print Hint Dialog */}
-      <Dialog open={showPrintHintDialog} onOpenChange={setShowPrintHintDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Printing Restricted</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <p className="text-gray-600 dark:text-gray-300">
-              You are currently viewing the application in a preview window where printing is restricted by the browser. 
-            </p>
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-800">
-              <strong className="block mb-2">How to print:</strong>
-              <ol className="list-decimal pl-5 space-y-2">
-                <li>Click the <strong>Open in New Tab</strong> button (looks like a square with an arrow) or <strong>Device</strong> button at the top right of this preview window.</li>
-                <li>Once the application opens in a new tab, click the Print button here again, or press <strong>Ctrl + P</strong>.</li>
-              </ol>
-            </div>
-            <Button className="w-full mt-2" onClick={() => setShowPrintHintDialog(false)}>Understood</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConf} onOpenChange={(open) => !open && setDeleteConf(null)}>
