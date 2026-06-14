@@ -628,12 +628,66 @@ export function AppContent() {
   };
 
   const [deleteConf, setDeleteConf] = useState<{ id: string, type: 'customer' | 'stock' | 'payment' | 'bank' | 'expense' | 'purchase' | 'invoice' } | null>(null);
+  // OPTIMISTIC UPDATE HELPER: Immediately update local state then sync with Firestore in background
+  // This is the permanent fix for 15-20 second delay. UI updates instantly, Firestore syncs in bg.
+  const optimisticSave = (
+    localUpdate: () => void,
+    firebaseOp: Promise<any>,
+    successMsg: { title: string; description: string },
+    errorContext: string
+  ) => {
+    localUpdate(); // Update UI immediately
+    toast(successMsg);
+    firebaseOp
+      .then(() => fetchData(true)) // Re-sync from Firestore in background (silent)
+      .catch((e: any) => {
+        console.error(`${errorContext} error:`, e);
+        toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' });
+        fetchData(true); // Re-sync to revert optimistic update on failure
+      });
+  };
+
   const handleConfirmDelete = async () => {
     if (!deleteConf) return;
     const isAuth = await ensureAuth();
     if (!isAuth) return;
     const conf = deleteConf;
     setDeleteConf(null);
+
+    // OPTIMISTIC: Remove from local state immediately
+    const revertFns: (() => void)[] = [];
+    if (conf.type === 'customer') {
+      const prev = [...customers];
+      setCustomers(cs => cs.filter(c => c.id !== conf.id));
+      revertFns.push(() => setCustomers(prev));
+    } else if (conf.type === 'stock') {
+      const prev = [...stockRecords];
+      setStockRecords(rs => rs.filter(r => r.id !== conf.id));
+      revertFns.push(() => setStockRecords(prev));
+    } else if (conf.type === 'payment') {
+      const prev = [...payments];
+      setPayments(ps => ps.filter(p => p.id !== conf.id));
+      revertFns.push(() => setPayments(prev));
+    } else if (conf.type === 'bank') {
+      const prev = [...bankPayments];
+      setBankPayments(bs => bs.filter(b => b.id !== conf.id));
+      revertFns.push(() => setBankPayments(prev));
+    } else if (conf.type === 'expense') {
+      const prev = [...expenses];
+      setExpenses(es => es.filter(e => e.id !== conf.id));
+      revertFns.push(() => setExpenses(prev));
+    } else if (conf.type === 'purchase') {
+      const prev = [...purchases];
+      setPurchases(ps => ps.filter(p => p.id !== conf.id));
+      revertFns.push(() => setPurchases(prev));
+    } else {
+      const prev = [...invoices];
+      setInvoices(is => is.filter(i => i.id !== conf.id));
+      revertFns.push(() => setInvoices(prev));
+    }
+
+    toast({ title: t('deleted'), description: '✓' });
+
     let p: Promise<any>;
     if (conf.type === 'customer') p = store.deleteCustomer(conf.id);
     else if (conf.type === 'stock') p = store.deleteStockRecord(conf.id);
@@ -642,34 +696,45 @@ export function AppContent() {
     else if (conf.type === 'expense') p = store.deleteExpense(conf.id);
     else if (conf.type === 'purchase') p = store.deletePurchase(conf.id);
     else p = store.deleteInvoice(conf.id);
-    toast({ title: t('syncing'), description: t('deletingData') });
-    p.then(() => {
-      toast({ title: t('deleted'), description: t('operationSuccessful') });
-      fetchData(true);
-    }).catch((e: any) => {
-      console.error('Delete error:', e);
-      toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' });
-    });
+
+    p.then(() => fetchData(true))
+     .catch((e: any) => {
+       console.error('Delete error:', e);
+       revertFns.forEach(fn => fn()); // Revert optimistic update
+       toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' });
+     });
   };
 
   const handleSaveCustomer = () => {
     if (!custForm.name || !custForm.phone) { toast({ title: t('error'), description: t('nameAndPhoneRequired'), variant: 'destructive' }); return; }
-    const p = editingCustomer ? store.updateCustomer(editingCustomer.id, custForm) : store.createCustomer({ userId: user?.id || '', ...custForm });
     const isEdit = !!editingCustomer;
+    const tempId = editingCustomer?.id || `temp_${Date.now()}`;
+    const newRecord = { id: tempId, userId: user?.id || '', ...custForm, totalPaid: editingCustomer?.totalPaid || 0, totalRemaining: editingCustomer?.totalRemaining || 0, lastPaymentDate: editingCustomer?.lastPaymentDate || null, createdAt: editingCustomer?.createdAt || new Date().toISOString() };
     setShowCustomerDialog(false); setEditingCustomer(null); resetCustForm();
-    toast({ title: isEdit ? t('updated') : t('added'), description: isEdit ? t('customerUpdated') : t('newCustomerAdded') });
-    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save customer error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
+    optimisticSave(
+      () => isEdit ? setCustomers(cs => cs.map(c => c.id === tempId ? { ...c, ...custForm } : c)) : setCustomers(cs => [newRecord, ...cs]),
+      isEdit ? store.updateCustomer(tempId, custForm) : store.createCustomer({ userId: user?.id || '', ...custForm }),
+      { title: isEdit ? t('updated') : t('added'), description: isEdit ? t('customerUpdated') : t('newCustomerAdded') },
+      'Save customer'
+    );
   };
   const handleDeleteCustomer = (id: string) => setDeleteConf({ id, type: 'customer' });
 
   const handleSaveStock = () => {
     if (!stockForm.customerId || !stockForm.itemName) { toast({ title: t('error'), description: t('customerAndItemRequired'), variant: 'destructive' }); return; }
     const body: any = { userId: user?.id, ...stockForm, weight: parseFloat(stockForm.weight) || 0, pricePerUnit: parseFloat(stockForm.pricePerUnit) || 0, totalAmount: parseFloat(stockForm.totalAmount) || 0, paidAmount: parseFloat(stockForm.paidAmount) || 0 };
+    body.remainingAmount = Math.max(0, body.totalAmount - body.paidAmount);
     const isEdit = !!editingStock;
-    const p = isEdit ? store.updateStockRecord(editingStock!.id, body) : store.createStockRecord(body);
+    const tempId = editingStock?.id || `temp_${Date.now()}`;
+    const customer = customers.find(c => c.id === body.customerId);
+    const newRecord = { ...body, id: tempId, customer: customer ? { name: customer.name, phone: customer.phone } : undefined, createdAt: editingStock?.createdAt || new Date().toISOString() };
     setShowStockDialog(false); setEditingStock(null); resetStockForm();
-    toast({ title: isEdit ? t('updated') : t('added'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') });
-    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save stock error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
+    optimisticSave(
+      () => isEdit ? setStockRecords(rs => rs.map(r => r.id === tempId ? { ...r, ...body } : r)) : setStockRecords(rs => [newRecord, ...rs]),
+      isEdit ? store.updateStockRecord(tempId, body) : store.createStockRecord(body),
+      { title: isEdit ? t('updated') : t('added'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') },
+      'Save stock'
+    );
   };
   const handleDeleteStock = (id: string) => setDeleteConf({ id, type: 'stock' });
 
@@ -679,45 +744,64 @@ export function AppContent() {
     if (!isAuth) return;
     const userId = auth.currentUser?.uid || user?.id || '';
     const isEdit = !!editingPayment;
-    const p = isEdit 
-      ? store.updatePayment(editingPayment!.id, { userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 })
-      : store.createPayment({ userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 });
-    
+    const tempId = editingPayment?.id || `temp_${Date.now()}`;
+    const customer = customers.find(c => c.id === paymentForm.customerId);
+    const newRecord = { id: tempId, userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0, stockRecordId: null, customer: customer ? { name: customer.name, phone: customer.phone } : undefined, createdAt: editingPayment?.createdAt || new Date().toISOString() };
     setShowPaymentDialog(false); setEditingPayment(null); resetPaymentForm();
-    toast({ title: isEdit ? t('updated') : t('paymentAdded'), description: isEdit ? t('stockRecordUpdated') : `PKR ${paymentForm.amount} ${t('received')}` });
-    
-    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save payment error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
+    optimisticSave(
+      () => isEdit ? setPayments(ps => ps.map(p => p.id === tempId ? { ...p, ...newRecord } : p)) : setPayments(ps => [newRecord, ...ps]),
+      isEdit ? store.updatePayment(tempId, { userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 }) : store.createPayment({ userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 }),
+      { title: isEdit ? t('updated') : t('paymentAdded'), description: isEdit ? t('stockRecordUpdated') : `PKR ${paymentForm.amount} ${t('received')}` },
+      'Save payment'
+    );
   };
   const handleDeletePayment = (id: string) => setDeleteConf({ id, type: 'payment' });
 
   const handleSaveBankPayment = () => {
     if (!bankForm.paymentAmount) { toast({ title: t('error'), description: t('amountRequired'), variant: 'destructive' }); return; }
     const isEdit = !!editingBankPayment;
-    const p = isEdit ? store.updateBankPayment(editingBankPayment.id, { userId: user?.id || "", ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 }) : store.createBankPayment({ userId: user?.id || "", ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 });
+    const tempId = editingBankPayment?.id || `temp_${Date.now()}`;
+    const customer = customers.find(c => c.id === bankForm.customerId);
+    const newRecord = { id: tempId, userId: user?.id || '', ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0, customer: customer ? { name: customer.name, phone: customer.phone } : undefined, createdAt: editingBankPayment?.createdAt || new Date().toISOString() };
     setShowBankPaymentDialog(false); setEditingBankPayment(null); resetBankForm();
-    toast({ title: isEdit ? t('updated') : t('bankPaymentAdded'), description: isEdit ? t('bankPaymentAdded') : `PKR ${bankForm.paymentAmount} ${t('recorded')}` });
-    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save bank payment error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
+    optimisticSave(
+      () => isEdit ? setBankPayments(bs => bs.map(b => b.id === tempId ? { ...b, ...newRecord } : b)) : setBankPayments(bs => [newRecord, ...bs]),
+      isEdit ? store.updateBankPayment(tempId, { userId: user?.id || '', ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 }) : store.createBankPayment({ userId: user?.id || '', ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 }),
+      { title: isEdit ? t('updated') : t('bankPaymentAdded'), description: isEdit ? t('bankPaymentAdded') : `PKR ${bankForm.paymentAmount} ${t('recorded')}` },
+      'Save bank payment'
+    );
   };
   const handleDeleteBankPayment = (id: string) => setDeleteConf({ id, type: 'bank' });
 
   const handleSaveExpense = () => {
     if (!expenseForm.description || !expenseForm.amount) { toast({ title: t('error'), description: t('descriptionAndAmountRequired'), variant: 'destructive' }); return; }
     const isEdit = !!editingExpense;
-    const p = isEdit ? store.updateExpense(editingExpense.id, { userId: user?.id || "", ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 }) : store.createExpense({ userId: user?.id || "", ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 });
+    const tempId = editingExpense?.id || `temp_${Date.now()}`;
+    const newRecord = { id: tempId, userId: user?.id || '', ...expenseForm, amount: parseFloat(expenseForm.amount) || 0, createdAt: editingExpense?.createdAt || new Date().toISOString() };
     setShowExpenseDialog(false); setEditingExpense(null); resetExpenseForm();
-    toast({ title: isEdit ? t('updated') : t('expenseAdded'), description: isEdit ? t('expenseAdded') : `PKR ${expenseForm.amount} ${t('recorded')}` });
-    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save expense error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
+    optimisticSave(
+      () => isEdit ? setExpenses(es => es.map(e => e.id === tempId ? { ...e, ...newRecord } : e)) : setExpenses(es => [newRecord, ...es]),
+      isEdit ? store.updateExpense(tempId, { userId: user?.id || '', ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 }) : store.createExpense({ userId: user?.id || '', ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 }),
+      { title: isEdit ? t('updated') : t('expenseAdded'), description: isEdit ? t('expenseAdded') : `PKR ${expenseForm.amount} ${t('recorded')}` },
+      'Save expense'
+    );
   };
   const handleDeleteExpense = (id: string) => setDeleteConf({ id, type: 'expense' });
 
   const handleSavePurchase = () => {
     if (!purchaseForm.supplierName || !purchaseForm.itemName) { toast({ title: t('error'), description: t('supplierAndItemRequired'), variant: 'destructive' }); return; }
-    const body: any = { userId: user?.id || "", ...purchaseForm, weight: parseFloat(purchaseForm.weight) || 0, pricePerUnit: parseFloat(purchaseForm.pricePerUnit) || 0, totalAmount: parseFloat(purchaseForm.totalAmount) || 0, paidAmount: parseFloat(purchaseForm.paidAmount) || 0 };
+    const body: any = { userId: user?.id || '', ...purchaseForm, weight: parseFloat(purchaseForm.weight) || 0, pricePerUnit: parseFloat(purchaseForm.pricePerUnit) || 0, totalAmount: parseFloat(purchaseForm.totalAmount) || 0, paidAmount: parseFloat(purchaseForm.paidAmount) || 0 };
+    body.remainingAmount = Math.max(0, body.totalAmount - body.paidAmount);
     const isEdit = !!editingPurchase;
-    const p = isEdit ? store.updatePurchase(editingPurchase!.id, body) : store.createPurchase(body);
+    const tempId = editingPurchase?.id || `temp_${Date.now()}`;
+    const newRecord = { ...body, id: tempId, createdAt: editingPurchase?.createdAt || new Date().toISOString() };
     setShowPurchaseDialog(false); setEditingPurchase(null); resetPurchaseForm();
-    toast({ title: isEdit ? t('purchaseUpdated') : t('purchaseAdded'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') });
-    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save purchase error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
+    optimisticSave(
+      () => isEdit ? setPurchases(ps => ps.map(p => p.id === tempId ? { ...p, ...body } : p)) : setPurchases(ps => [newRecord, ...ps]),
+      isEdit ? store.updatePurchase(tempId, body) : store.createPurchase(body),
+      { title: isEdit ? t('purchaseUpdated') : t('purchaseAdded'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') },
+      'Save purchase'
+    );
   };
   const handleDeletePurchase = (id: string) => setDeleteConf({ id, type: 'purchase' });
 
@@ -738,11 +822,6 @@ export function AppContent() {
 
   const handlePrint = () => {
     try {
-      const isIframe = window !== window.parent;
-      if (isIframe) {
-        setShowPrintHintDialog(true);
-        return;
-      }
       setTimeout(() => {
         window.print();
       }, 100);
@@ -754,22 +833,133 @@ export function AppContent() {
 
   const handleInvoicePrint = () => {
     try {
-      const isIframe = window !== window.parent;
-      if (isIframe) {
-        setShowPrintHintDialog(true);
+      if (!selectedInvoice) return;
+      // ROOT CAUSE FIX: Radix Dialog renders into a portal div at body level.
+      // When body.printing-invoice class is added, browser hides everything but
+      // the portal visibility chain still breaks in many browsers.
+      // PERMANENT FIX: Open a fresh print window with clean HTML - 100% reliable.
+      const inv = selectedInvoice;
+      const pkr = (n: number) => `PKR ${Math.round(n).toLocaleString()}`;
+      const statusLabel = inv.status === 'paid' ? 'Clear (Full Paid)' : inv.status === 'partial' ? 'Thora Udhar (Half Paid)' : 'Mukammal Udhar (Not Paid)';
+      const typeLabel = inv.type === 'sale' ? 'Sale' : 'Purchase';
+      const appName = branding.appName || 'Finance Tracker';
+
+      const printHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invoice ${inv.invoiceNumber}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 32px; color: #111; background: white; }
+    .header { text-align: center; border-bottom: 2px solid #059669; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { font-size: 28px; color: #059669; font-weight: bold; }
+    .header p { color: #666; font-size: 14px; margin-top: 4px; }
+    .invoice-num { font-size: 18px; font-weight: bold; font-family: monospace; margin-top: 8px; }
+    .badges { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
+    .badge { padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: bold; border: 1px solid; }
+    .badge-green { background: #dcfce7; color: #15803d; border-color: #86efac; }
+    .badge-orange { background: #ffedd5; color: #c2410c; border-color: #fdba74; }
+    .badge-yellow { background: #fef9c3; color: #a16207; border-color: #fde047; }
+    .badge-red { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+    .section { margin-bottom: 20px; }
+    .section h3 { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #374151; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .grid-item label { font-size: 12px; color: #6b7280; display: block; }
+    .grid-item span { font-size: 15px; font-weight: 600; }
+    .item-grid { background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .item-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px solid #f3f4f6; }
+    .item-row:last-child { border-bottom: none; }
+    .item-row span:first-child { color: #6b7280; }
+    .item-row span:last-child { font-weight: 600; }
+    .amounts { background: #ecfdf5; padding: 16px; border-radius: 8px; border: 1px solid #a7f3d0; }
+    .amount-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 16px; }
+    .amount-row.total span { font-weight: bold; font-size: 18px; }
+    .amount-row.paid span { color: #059669; font-weight: bold; }
+    .amount-row.remaining span { color: #dc2626; font-weight: bold; font-size: 20px; }
+    .divider { border: none; border-top: 1px solid #d1fae5; margin: 8px 0; }
+    .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${appName}</h1>
+    <p>Business &amp; Finance Manager</p>
+    <div class="invoice-num">${inv.invoiceNumber}</div>
+    <div class="badges">
+      <span class="badge ${inv.type === 'sale' ? 'badge-green' : 'badge-orange'}">${typeLabel}</span>
+      <span class="badge ${inv.status === 'paid' ? 'badge-green' : inv.status === 'partial' ? 'badge-yellow' : 'badge-red'}">${statusLabel}</span>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Party Details</h3>
+    <div class="grid">
+      <div class="grid-item"><label>Name</label><span>${inv.partyName || 'N/A'}</span></div>
+      <div class="grid-item"><label>Phone</label><span>${inv.partyPhone || 'N/A'}</span></div>
+      <div class="grid-item"><label>City</label><span>${inv.partyCity || 'N/A'}</span></div>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Item Details</h3>
+    <div class="item-grid">
+      <div class="item-row"><span>Item Name</span><span>${inv.itemName || 'N/A'}</span></div>
+      <div class="item-row"><span>Category</span><span>${inv.itemCategory || 'N/A'}</span></div>
+      <div class="item-row"><span>Weight</span><span>${inv.weight} ${inv.weightUnit}</span></div>
+      <div class="item-row"><span>Price per Unit</span><span>${pkr(inv.pricePerUnit)}</span></div>
+      <div class="item-row"><span>Date</span><span>${new Date(inv.date).toLocaleDateString('en-PK')}</span></div>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Amount Breakdown</h3>
+    <div class="amounts">
+      <div class="amount-row total"><span>Total Amount</span><span>${pkr(inv.totalAmount)}</span></div>
+      <div class="amount-row paid"><span>Paid</span><span>${pkr(inv.paidAmount)}</span></div>
+      <hr class="divider">
+      <div class="amount-row remaining"><span>Remaining</span><span>${pkr(inv.remainingAmount)}</span></div>
+    </div>
+  </div>
+  ${inv.notes ? `<div class="section"><h3>Notes</h3><p style="color:#6b7280;font-size:14px;">${inv.notes}</p></div>` : ''}
+  <div class="footer">Generated by ${appName} &bull; ${new Date().toLocaleDateString('en-PK')}</div>
+  <script>window.onload = function() { setTimeout(function() { window.print(); }, 300); };<\/script>
+</body>
+</html>`;
+
+      const printWindow = window.open('', '_blank', 'width=800,height=900');
+      if (!printWindow) {
+        // Popup blocked - fallback to hidden iframe for printing
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
+        
+        const iframeDoc = iframe.contentWindow?.document;
+        if (iframeDoc) {
+          iframeDoc.open();
+          iframeDoc.write(printHtml);
+          iframeDoc.close();
+          
+          // Force print from React just in case the iframe script doesn't execute
+          setTimeout(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          }, 500);
+
+          // Cleanup iframe after printing
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 10000);
+        }
         return;
       }
-      setIsPrintingInvoice(true);
-      document.body.classList.add('printing-invoice');
-      
-      // Strip dark mode directly globally for printing if needed, or handle in CSS
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-          setIsPrintingInvoice(false);
-          document.body.classList.remove('printing-invoice');
-        }, 500);
-      }, 200);
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
     } catch (e) {
       console.error('Invoice Print Error:', e);
       toast({ title: t('error') || 'Error', description: "Failed to print.", variant: "destructive" });

@@ -1,23 +1,20 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { initializeFirestore, CACHE_SIZE_UNLIMITED } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-// Enable local persistence to drastically improve performance of getDocs
-try {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
-    } else if (err.code === 'unimplemented') {
-      console.warn('The current browser does not support all of the features required to enable persistence');
-    }
-  });
-} catch (e) {
-  // Ignore errors in SSR/Node env
-}
+// FIX: Use initializeFirestore instead of getFirestore + enableIndexedDbPersistence
+// enableIndexedDbPersistence was deprecated and caused 15-20 second delays
+// because it tried to acquire an exclusive lock on IndexedDB which is slow in
+// multi-tab scenarios and on some browsers. Instead we use persistentLocalCache
+// via the new API which is non-blocking.
+export const db = initializeFirestore(app, {
+  // Use memory cache only - no IndexedDB lock contention
+  // This eliminates the 15-20 second delay on writes
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+}, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();

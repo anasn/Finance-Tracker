@@ -66,31 +66,60 @@ body {
 @media print {
   .no-print { display: none !important; }
   
-  body.printing-invoice * {
-    visibility: hidden;
+  /* FIX: When printing invoice, hide everything on the page */
+  body.printing-invoice > * {
+    display: none !important;
   }
-  
-  body.printing-invoice #invoice-print,
-  body.printing-invoice #invoice-print * {
-    visibility: visible;
+
+  /* But show the portal (Radix dialog renders into a portal at body level) */
+  body.printing-invoice > [data-radix-portal],
+  body.printing-invoice > [data-radix-popper-content-wrapper] {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
+    background: white !important;
   }
-  
+
+  /* Hide all dialog chrome - overlay, close button, dialog wrapper */
+  body.printing-invoice [role="dialog"] > *:not(#invoice-print),
+  body.printing-invoice [data-radix-dialog-overlay],
+  body.printing-invoice [data-radix-dialog-close] {
+    display: none !important;
+  }
+
+  /* Show the invoice content - target the inner content div */
   body.printing-invoice #invoice-print {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    display: block !important;
+    position: relative !important;
     width: 100% !important;
-    margin: 0 !important;
-    padding: 20px !important;
     background: white !important;
     color: black !important;
   }
-  
-  /* Reset dialog constraints to allow full-page printing */
-  body.printing-invoice [data-radix-portal] {
-    position: static !important;
-    transform: none !important;
-    overflow: visible !important;
+
+  body.printing-invoice #invoice-print * {
+    color: black !important;
+    background: transparent !important;
+    border-color: #e5e7eb !important;
+    visibility: visible !important;
+  }
+
+  body.printing-invoice #invoice-print .no-print {
+    display: none !important;
+  }
+
+  /* Fallback: if above doesn't work, use visibility approach on body content only */
+  @supports not (display: none) {
+    body.printing-invoice * { visibility: hidden; }
+    body.printing-invoice #invoice-print,
+    body.printing-invoice #invoice-print * { visibility: visible !important; }
+    body.printing-invoice #invoice-print {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      background: white !important;
+    }
   }
 }
 
