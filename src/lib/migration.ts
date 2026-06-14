@@ -54,6 +54,8 @@ export async function migrateLocalStorageToFirestore(userId: string) {
           const id = item.id || (c.name === 'branding' ? userId : crypto.randomUUID());
           const docRef = doc(db, c.name, id);
           
+          if (!item.userId) item.userId = userId;
+
           if (!item.createdAt) item.createdAt = new Date().toISOString();
           if (!item.updatedAt) item.updatedAt = item.createdAt;
           

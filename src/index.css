@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  /* Light mode — high contrast, readable */
-  --color-background: #f0f2f5;
-  --color-foreground: #0d1117;
+  --color-background: #f5f7fa;
+  --color-foreground: #0f172a;
   --color-card: #ffffff;
-  --color-card-foreground: #111827;
+  --color-card-foreground: #0f172a;
   --color-popover: #ffffff;
-  --color-popover-foreground: #111827;
+  --color-popover-foreground: #0f172a;
   --color-primary: #059669;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #e5e7eb;
-  --color-secondary-foreground: #111827;
-  --color-muted: #e5e7eb;
-  --color-muted-foreground: #4b5563;
-  --color-accent: #e5e7eb;
-  --color-accent-foreground: #111827;
-  --color-destructive: #dc2626;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
-  --color-border: #d1d5db;
-  --color-input: #d1d5db;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
   --color-ring: #059669;
   --radius: 0.75rem;
 
@@ -64,10 +65,11 @@ body {
 /* Print styles */
 @media print {
   .no-print { display: none !important; }
-  body * {
+  body:has(#invoice-print) * {
     visibility: hidden;
   }
-  #invoice-print, #invoice-print * {
+  body:has(#invoice-print) #invoice-print,
+  body:has(#invoice-print) #invoice-print * {
     visibility: visible;
   }
   #invoice-print {

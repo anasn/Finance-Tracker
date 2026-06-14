@@ -43,6 +43,7 @@ interface DashboardData { totalCustomers: number; totalStockRecords: number; tot
 const PKR = (n: number) => `PKR ${Math.round(n).toLocaleString()}`;
 const PAKISTANI_BANKS = ['Meezan Bank','HBL','Bank Alfalah','UBL','Allied Bank','MCB Bank','Askari Bank','Faysal Bank','JS Bank','Silk Bank','Soneri Bank','Bank Al Habib'];
 const ITEM_CATEGORIES = ['Jackets','Sweaters','Jeans','Shirts','Shoes','Bags','Kids Clothes','Mixed Clothes','Trousers','Hoodies','T-Shirts','Caps','Bedsheets','Curtains'];
+const MAIN_CATEGORIES = ['Men', 'Women', 'Kids', 'Accessories', 'Home & Bedding'];
 const EXPENSE_CATEGORIES = ['Transport','Shop Rent','Electricity','Labour','Food','Loading/Unloading','Phone/Internet','General','Other'];
 const PAYMENT_METHODS = ['Cash','Bank Transfer','JazzCash','EasyPaisa'];
 const WEIGHT_UNITS = ['KG','Ton','Gram'];
@@ -52,27 +53,254 @@ type Lang = 'en' | 'ur';
 const tr: Record<string, Record<Lang, string>> = {
   dashboard:{en:'Dashboard',ur:'ڈیش بورڈ'},customers:{en:'Customers',ur:'گاہک'},stockSent:{en:'Sales',ur:'سٹاک بھیجا'},purchases:{en:'Purchases',ur:'خریداری'},wasooli:{en:'Wasooli',ur:'وصولی'},bankRecords:{en:'Bank Records',ur:'بینک ریکارڈ'},expenses:{en:'Expenses',ur:'اخراجات'},invoices:{en:'Invoices',ur:'انوائس'},search:{en:'Search',ur:'تلاش'},settings:{en:'Settings',ur:'سیٹنگز'},name:{en:'Name',ur:'نام'},phone:{en:'Phone',ur:'فون'},city:{en:'City',ur:'شہر'},address:{en:'Address',ur:'پتہ'},notes:{en:'Notes',ur:'نوٹ'},amount:{en:'Amount',ur:'رقم'},date:{en:'Date',ur:'تاریخ'},itemName:{en:'Item Name',ur:'آئٹم کا نام'},category:{en:'Category',ur:'قسم'},weight:{en:'Weight',ur:'وزن'},price:{en:'Price',ur:'قیمت'},total:{en:'Total',ur:'کل'},remaining:{en:'Remaining',ur:'باقی'},description:{en:'Description',ur:'تفصیل'},add:{en:'Add',ur:'شامل کریں'},edit:{en:'Edit',ur:'ترمیم'},delete:{en:'Delete',ur:'حذف'},save:{en:'Save',ur:'محفوظ کریں'},cancel:{en:'Cancel',ur:'منسوخ'},all:{en:'All',ur:'سب'},login:{en:'Login',ur:'لاگ ان'},signUp:{en:'Sign Up',ur:'سائن اپ'},logout:{en:'Logout',ur:'لاگ آؤٹ'},createAccount:{en:'Create Account',ur:'اکاؤنٹ بنائیں'},calculator:{en:'Calculator',ur:'کیلکولیٹر'},printLabel:{en:'Print / PDF',ur:'پرنٹ'},language:{en:'Language',ur:'زبان'},supplierName:{en:'Supplier Name',ur:'فراہم کنده'},customer:{en:'Customer',ur:'گاہک'},supplier:{en:'Supplier',ur:'فراہم کنده'},invoice:{en:'Invoice',ur:'انوائس'},invoiceNumber:{en:'Invoice Number',ur:'انوائس نمبر'},type:{en:'Type',ur:'قسم'},sale:{en:'Sale',ur:'فروخت'},purchase:{en:'Purchase',ur:'خریداری'},status:{en:'Status',ur:'حیثیت'},partial:{en:'Thora Udhar (Half Paid)',ur:'تھوڑا ادھار'},unpaid:{en:'Mukammal Udhar (Not Paid)',ur:'مکمل ادھار'},viewInvoice:{en:'View Invoice',ur:'انوائس دیکھیں'},totalStockValue:{en:'Total Sales Value',ur:'کل سٹاک ویلیو'},totalReceived:{en:'Total Received',ur:'کل وصولی'},remainingMoney:{en:'Remaining Money',ur:'باقی رقم'},todayWasooli:{en:'Today Wasooli',ur:'آج کی وصولی'},thisMonth:{en:'This Month',ur:'اس مہینے'},totalCustomers:{en:'Total Customers',ur:'کل گاہک'},totalPurchases:{en:'Total Purchases',ur:'کل خریداری'},notPaid:{en:'Mukammal Udhar (Not Paid)',ur:'مکمل ادھار'},halfPaid:{en:'Thora Udhar (Half Paid)',ur:'تھوڑا ادھار'},paid:{en:'Clear (Full Paid)',ur:'مکمل ادا'},paymentMethod:{en:'Payment Method',ur:'ادائیگی کا طریقہ'},bankName:{en:'Bank Name',ur:'بینک کا نام'},transactionNote:{en:'Transaction Note',ur:'ٹرانزیکشن نوٹ'},accountType:{en:'Account Type',ur:'اکاؤنٹ کی قسم'},darkMode:{en:'Dark Mode',ur:'ڈارک موڈ'},yourAccount:{en:'Your Account',ur:'آپ کا اکاؤنٹ'},currency:{en:'Currency',ur:'کرنسی'},dataBackup:{en:'Data Backup',ur:'ڈیٹا بیک اپ'},downloadBackup:{en:'Download Backup (JSON)',ur:'بیک اپ ڈاؤنلوڈ کریں'},email:{en:'Email',ur:'ای میل'},password:{en:'Password',ur:'پاس ورڈ'},yourName:{en:'Your Name',ur:'آپ کا نام'},phoneNumber:{en:'Phone Number',ur:'فون نمبر'},enterPassword:{en:'Enter password',ur:'پاس ورڈ درج کریں'},createPassword:{en:'Create password',ur:'پاس ورڈ بنائیں'},welcome:{en:'Welcome!',ur:'خوش آمدید!'},loginFailed:{en:'Login Failed',ur:'لاگ ان ناکام'},wrongEmailPassword:{en:'Wrong email or password',ur:'غلط ای میل یا پاس ورڈ'},error:{en:'Error',ur:'خطا'},accountCreated:{en:'Account Created!',ur:'اکاؤنٹ بن گیا!'},pleaseLoginNow:{en:'Please login now.',ur:'براہ کرم لاگ ان کریں۔'},signupFailed:{en:'Signup Failed',ur:'سائن اپ ناکام'},tryAgain:{en:'Try again',ur:'دوبارہ کوشش کریں'},loggedOut:{en:'Logged Out',ur:'لاگ آؤٹ'},seeYouNextTime:{en:'See you next time!',ur:'پھر ملتے ہیں!'},updated:{en:'Updated!',ur:'اپ ڈیٹ ہو گیا!'},added:{en:'Added!',ur:'شامل کر دیا گیا!'},deleted:{en:'Deleted',ur:'حذف ہو گیا'},failedToSave:{en:'Failed to save',ur:'محفوظ نہیں ہو سکا'},failedToDelete:{en:'Failed to delete',ur:'حذف نہیں ہو سکا'},nameAndPhoneRequired:{en:'Name and Phone are required',ur:'نام اور فون ضروری ہیں'},customerUpdated:{en:'Customer updated successfully',ur:'گاہک اپ ڈیٹ ہوا'},newCustomerAdded:{en:'New customer added',ur:'نیا گاہک شامل کر دیا گیا'},customerDeleted:{en:'Customer deleted',ur:'گاہک حذف ہو گیا'},deleteCustomerConfirm:{en:'Delete this customer and all records?',ur:'کیا آپ اس گاہک کو حذف کرنا چاہتے ہیں؟'},customerAndItemRequired:{en:'Customer and Item Name are required',ur:'گاہک اور آئٹم کا نام ضروری ہیں'},stockRecordAdded:{en:'Sale record added',ur:'سٹاک ریکارڈ شامل کر دیا گیا'},stockRecordUpdated:{en:'Sale record updated',ur:'سٹاک ریکارڈ اپ ڈیٹ ہو گیا'},stockRecordDeleted:{en:'Sale record deleted',ur:'سٹاک ریکارڈ حذف ہو گیا'},deleteStockConfirm:{en:'Delete this sale?',ur:'کیا اس سٹاک ریکارڈ کو حذف کریں؟'},customerAndAmountRequired:{en:'Customer and Amount are required',ur:'گاہک اور رقم ضروری ہیں'},paymentAdded:{en:'Payment Added!',ur:'وصولی شامل کر دی گئی!'},received:{en:'received',ur:'وصول ہئی'},paymentDeleted:{en:'Payment deleted',ur:'وصولی حذف ہو گئی'},deletePaymentConfirm:{en:'Delete this payment?',ur:'کیا اس وصولی کو حذف کریں؟'},amountRequired:{en:'Amount is required',ur:'رقم ضروری ہے'},bankPaymentAdded:{en:'Bank Payment Added!',ur:'بینک ادائیگی شامل کر دی گئی!'},recorded:{en:'recorded',ur:'ریکارڈ ہوا گیا'},bankPaymentDeleted:{en:'Bank payment deleted',ur:'بینک ادائیگی حذف ہو گئی'},deleteBankPaymentConfirm:{en:'Delete this bank payment?',ur:'کیا اس بینک ادائیگی کو حذف کریں؟'},descriptionAndAmountRequired:{en:'Description and Amount are required',ur:'تفصیل اور رقم ضروری ہیں'},expenseAdded:{en:'Expense Added!',ur:'اخراجات شامل کر دی گئی!'},expenseDeleted:{en:'Expense deleted',ur:'اخراجات حذف ہو گئیں'},deleteExpenseConfirm:{en:'Delete this expense?',ur:'کیا اس اخراجات کو حذف کریں؟'},searchCustomers:{en:'Search customers...',ur:'گاہک تلاش کریں...'},searchStock:{en:'Search sales...',ur:'سٹاک تلاش کریں...'},searchPurchases:{en:'Search purchases...',ur:'خریداری تلاش کریں...'},searchAnything:{en:'Search anything...',ur:'کچھ بھی تلاش کریں...'},addCustomer:{en:'Add Customer',ur:'گاہک شامل کریں'},addStock:{en:'Add Sale',ur:'سٹاک شامل کریں'},addPayment:{en:'Add Payment',ur:'وصولی شامل کریں'},addBankPayment:{en:'Add Bank Payment',ur:'بینک ادائیگی شامل کریں'},addExpense:{en:'Add Expense',ur:'اخراجات شامل کریں'},addPurchase:{en:'Add Purchase',ur:'خریداری شامل کریں'},editCustomer:{en:'Edit Customer',ur:'گاہک ترمیم'},addNewCustomer:{en:'Add New Customer',ur:'نیا گاہک شامل کریں'},editStockRecord:{en:'Edit Sale',ur:'سٹاک ریکارڈ ترمیم'},sendStockToCustomer:{en:'Create Sale',ur:'گاہک کو سٹاک بھیجیں'},editPayment:{en:'Edit Payment',ur:'وصولی ترمیم'},addPaymentWasooli:{en:'Add Payment (Wasooli)',ur:'وصولی شامل کریں'},editBankPayment:{en:'Edit Bank Payment',ur:'بینک ادائیگی ترمیم'},addBankPaymentRecord:{en:'Add Bank Payment Record',ur:'بینک ادائیگی شامل کریں'},editExpense:{en:'Edit Expense',ur:'اخراجات ترمیم'},addNewExpense:{en:'Add New Expense',ur:'نیا اخراجات شامل کریں'},editPurchase:{en:'Edit Purchase',ur:'خریداری ترمیم'},addNewPurchase:{en:'Add New Purchase',ur:'نیی خریداری شامل کریں'},updateCustomer:{en:'Update Customer',ur:'گاہک اپ ڈیٹ کریں'},updateStock:{en:'Update Sale',ur:'سٹاک اپ ڈیٹ کریں'},sendStock:{en:'Create Sale',ur:'سٹاک بھیجیں'},savePayment:{en:'Save Payment',ur:'وصولی محفوظ کریں'},saveBankPayment:{en:'Save Bank Payment',ur:'بینک ادائیگی محفوظ کریں'},saveExpense:{en:'Save Expense',ur:'اخراجات محفوظ کریں'},savePurchase:{en:'Save Purchase',ur:'خریداری محفوظ کریں'},remainingAmountLabel:{en:'Remaining Amount:',ur:'باقی رقم:'},unpaidCustomers:{en:'Udhar (Not Paid) Customers',ur:'غیر ادا شدا گاہک'},itemsPending:{en:'items pending',ur:'آئٹم باقی'},remind:{en:'Remind',ur:'یاد دہانی'},paymentHistory:{en:'Payment History',ur:'ادائیگی کی تاریخ'},noPaymentsRecorded:{en:'No payments recorded yet',ur:'ابھی تک کوئی وصولی ریکارڈ نہیں'},allPaymentsReceived:{en:'All payments received!',ur:'تمام ادائیگیاں وصول!'},noBankPaymentsRecorded:{en:'No bank payments recorded',ur:'کوئی بینک ادائیگی ریکارڈ نہیں'},totalExpenses:{en:'Total Expenses',ur:'کل اخراجات'},noExpensesRecorded:{en:'No expenses recorded',ur:'کوئی اخراجات ریکارڈ نہیں'},noCustomersFound:{en:'No customers found',ur:'کوئی گاہک نہیں ملا'},noStockRecordsFound:{en:'No sales found',ur:'کوئی سٹاک ریکارڈ نہیں ملا'},noPurchasesFound:{en:'No purchases found',ur:'کوئی خریداری نہیں ملی'},noInvoicesFound:{en:'No invoices found',ur:'کوئی انوائس نہیں ملے'},customerDetails:{en:'Customer Details',ur:'گاہک کی تفصیلات'},paymentTimeline:{en:'Payment Timeline',ur:'ادائیگی ٹائم لائن'},stockHistory:{en:'Sales History',ur:'سٹاک کی تاریخ'},quickAddPayment:{en:'Quick Add Payment',ur:'فوری وصولی'},simpleCalculator:{en:'Simple Calculator',ur:'سادہ کیلکولیٹر'},monthlyWasooliChart:{en:'Monthly Wasooli Chart',ur:'ماہانہ وصولی چارٹ'},stockSentVsExpenses:{en:'Sales vs Expenses',ur:'سٹاک بمقابلہ اخراجات'},paymentStatus:{en:'Payment Status',ur:'ادائیگی کی حیثیت'},recentActivity:{en:'Recent Activity',ur:'حالیہ سرگرمی'},noActivityYet:{en:'No activity yet. Start by adding customers!',ur:'ابھی تک کوئی سرگرمی نہیں!'},netProfit:{en:'Net Profit (Received - Expenses)',ur:'خالص منافع'},totalSpent:{en:'Total Spent',ur:'کل خرچ'},remainingToPay:{en:'Remaining to Pay',ur:'باقی ادائیگی'},invoiceDetails:{en:'Invoice Details',ur:'انوائس تفصیلات'},partyDetails:{en:'Party Details',ur:'پارٹی تفصیلات'},itemDetails:{en:'Item Details',ur:'آئٹم تفصیلات'},amountBreakdown:{en:'Amount Breakdown',ur:'رقم کی تفصیل'},printInvoice:{en:'Print Invoice',ur:'انوائس پرنٹ کریں'},invoiceDeleted:{en:'Invoice deleted',ur:'انوائس حذف ہو گیا'},deleteInvoiceConfirm:{en:'Delete this invoice?',ur:'کیا اس انوائس کو حذف کریں؟'},purchaseAdded:{en:'Purchase Added!',ur:'خریداری شامل کر دی گئی!'},purchaseUpdated:{en:'Purchase Updated!',ur:'خریداری اپ ڈیٹ ہو گئی!'},purchaseDeleted:{en:'Purchase deleted',ur:'خریداری حذف ہو گئی'},deletePurchaseConfirm:{en:'Delete this purchase?',ur:'کیا اس خریداری کو حذف کریں؟'},supplierAndItemRequired:{en:'Supplier Name and Item Name are required',ur:'فراہم کنده اور آئٹم کا نام ضروری ہیں'},details:{en:'Details',ur:'تفصیلات'},whatsapp:{en:'WhatsApp',ur:'واٹس ایپ'},profit:{en:'Net Profit',ur:'خالص منافع'},bankSynced:{en:'Bank record synced!',ur:'بینک ریکارڈ سینک ہو گیا!'},selectCustomer:{en:'Select Customer',ur:'گاہک منتخب کریں'},
   forgotPassword:{en:'Forgot Password?',ur:'پاس ورڈ بھول گئے؟'},resetPassword:{en:'Reset Password',ur:'پاس ورڈ ری سیٹ کریں'},resetEmailSent:{en:'Password reset email sent!',ur:'پاس ورڈ ری سیٹ ای میل بھیج دی گئی!'},continueWithGoogle:{en:'Continue with Google',ur:'گوگل کے ساتھ جاری رکھیں'},
-  businessFinance:{en:'Business & Finance',ur:'بزنس اینڈ فنانس'},businessAcc:{en:'Business Acc',ur:'بزنس اکاؤنٹ'},totalWasooliReceived:{en:'Total Wasooli Received',ur:'کل وصولی موصول'},pendingPaymentsLabel:{en:'Pending Payments',ur:'زیر التوا ادائیگیاں'},thisMonthWasooli:{en:'This Month Wasooli',ur:'اس مہینے کی وصولی'},totalBankIn:{en:'Total Bank In',ur:'کل بینک ان'},totalTransactions:{en:'Total Transactions',ur:'کل لین دین'},banksUsed:{en:'Banks Used',ur:'استعمال شدہ بینک'},thisMonthExpenses:{en:'This Month',ur:'اس مہینے'},categoriesUsed:{en:'Categories Used',ur:'استعمال شدہ اقسام'},fifteenDaysReminders:{en:'15-Days Payment Reminders',ur:'15 دن کی ادائیگی یاد دہانی'},confirmDeletion:{en:'Confirm Deletion',ur:'حذف کرنے کی تصدیق'},confirmDeleteMsg:{en:'Are you sure you want to delete this record? This action cannot be undone.',ur:'کیا آپ واقعی اس ریکارڈ کو حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں کیا جا سکتا۔'},cancelBtn:{en:'Cancel',ur:'منسوخ'},deleteBtn:{en:'Delete',ur:'حذف کریں'},deletingBtn:{en:'Deleting...',ur:'حذف ہو رہا ہے...'},storageAlmostFull:{en:'Storage Almost Full',ur:'اسٹوریج تقریباً ختم'},storageWarningMsg:{en:'Your local storage is getting full. Please export a backup immediately to prevent data loss.',ur:'آپ کا لوکل اسٹوریج بھر رہا ہے۔ براہ کرم ڈیٹا کے نقصان سے بچنے کے لیے فوری طور پر بیک اپ ایکسپورٹ کریں۔'},backupNow:{en:'Backup Now',ur:'ابھی بیک اپ لیں'},dataBackupRecommended:{en:'Data Backup Recommended',ur:'ڈیٹا بیک اپ کی تجویز'},backupRemindMsg:{en:"It's been a while since your last backup. Keep your data safe.",ur:'کافی عرصہ ہو گیا ہے آپ کے آخری بیک اپ کو۔ اپنے ڈیٹا کو محفوظ رکھیں۔'},downloadBackupBtn:{en:'Download Backup',ur:'بیک اپ ڈاؤنلوڈ کریں'},completeFinanceSolution:{en:'Complete Business Finance Solution',ur:'مکمل بزنس فنانس حل'},orContinueWith:{en:'Or continue with',ur:'یا اس کے ساتھ جاری رکھیں'},backToLogin:{en:'Back to Login',ur:'لاگ ان پر واپس'},customBranding:{en:'Custom Branding',ur:'کسٹم برانڈنگ'},appNameLabel:{en:'Application Name',ur:'ایپلیکیشن کا نام'},logoLabel:{en:'Logo (Emoji or Image URL)',ur:'لوگو (ایموجی یا امیج URL)'},themeColorLabel:{en:'Theme Color',ur:'تھیم کلر'},saveBranding:{en:'Save Branding',ur:'برانڈنگ محفوظ کریں'},brandingSaved:{en:'Branding preferences saved successfully',ur:'برانڈنگ ترجیحات محفوظ ہو گئیں'},fromDate:{en:'From',ur:'سے'},toDate:{en:'To',ur:'تک'},clear:{en:'Clear',ur:'صاف کریں'},loading:{en:'Loading...',ur:'لوڈ ہو رہا ہے...'},noTransactionsFound:{en:'No transactions found',ur:'کوئی لین دین نہیں ملا'},backupDownloaded:{en:'Backup downloaded successfully',ur:'بیک اپ کامیابی سے ڈاؤنلوڈ ہو گیا'},backupRestored:{en:'Backup restored successfully',ur:'بیک اپ کامیابی سے بحال ہو گیا'},invalidJson:{en:'Invalid JSON file',ur:'غلط JSON فائل'},operationFailed:{en:'Operation failed',ur:'آپریشن ناکام'},failedToDeleteRecord:{en:'Failed to delete',ur:'حذف کرنے میں ناکام'},printContent:{en:'Print Content',ur:'مواد پرنٹ کریں'},
+  businessFinance:{en:'Business & Finance',ur:'بزنس اینڈ فنانس'},businessAcc:{en:'Business Acc',ur:'بزنس اکاؤنٹ'},totalWasooliReceived:{en:'Total Wasooli Received',ur:'کل وصولی موصول'},pendingPaymentsLabel:{en:'Pending Payments',ur:'زیر التوا ادائیگیاں'},thisMonthWasooli:{en:'This Month Wasooli',ur:'اس مہینے کی وصولی'},totalBankIn:{en:'Total Bank In',ur:'کل بینک ان'},totalTransactions:{en:'Total Transactions',ur:'کل لین دین'},banksUsed:{en:'Banks Used',ur:'استعمال شدہ بینک'},thisMonthExpenses:{en:'This Month',ur:'اس مہینے'},categoriesUsed:{en:'Categories Used',ur:'استعمال شدہ اقسام'},fifteenDaysReminders:{en:'Unpaid Customers',ur:'بقایا جات والے گاہک'},confirmDeletion:{en:'Confirm Deletion',ur:'حذف کرنے کی تصدیق'},confirmDeleteMsg:{en:'Are you sure you want to delete this record? This action cannot be undone.',ur:'کیا آپ واقعی اس ریکارڈ کو حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں کیا جا سکتا۔'},cancelBtn:{en:'Cancel',ur:'منسوخ'},deleteBtn:{en:'Delete',ur:'حذف کریں'},deletingBtn:{en:'Deleting...',ur:'حذف ہو رہا ہے...'},storageAlmostFull:{en:'Storage Almost Full',ur:'اسٹوریج تقریباً ختم'},storageWarningMsg:{en:'Your local storage is getting full. Please export a backup immediately to prevent data loss.',ur:'آپ کا لوکل اسٹوریج بھر رہا ہے۔ براہ کرم ڈیٹا کے نقصان سے بچنے کے لیے فوری طور پر بیک اپ ایکسپورٹ کریں۔'},backupNow:{en:'Backup Now',ur:'ابھی بیک اپ لیں'},dataBackupRecommended:{en:'Data Backup Recommended',ur:'ڈیٹا بیک اپ کی تجویز'},backupRemindMsg:{en:"It's been a while since your last backup. Keep your data safe.",ur:'کافی عرصہ ہو گیا ہے آپ کے آخری بیک اپ کو۔ اپنے ڈیٹا کو محفوظ رکھیں۔'},downloadBackupBtn:{en:'Download Backup',ur:'بیک اپ ڈاؤنلوڈ کریں'},completeFinanceSolution:{en:'Complete Business Finance Solution',ur:'مکمل بزنس فنانس حل'},orContinueWith:{en:'Or continue with',ur:'یا اس کے ساتھ جاری رکھیں'},backToLogin:{en:'Back to Login',ur:'لاگ ان پر واپس'},customBranding:{en:'Custom Branding',ur:'کسٹم برانڈنگ'},appNameLabel:{en:'Application Name',ur:'ایپلیکیشن کا نام'},logoLabel:{en:'Logo (Emoji or Image URL)',ur:'لوگو (ایموجی یا امیج URL)'},themeColorLabel:{en:'Theme Color',ur:'تھیم کلر'},saveBranding:{en:'Save Branding',ur:'برانڈنگ محفوظ کریں'},brandingSaved:{en:'Branding preferences saved successfully',ur:'برانڈنگ ترجیحات محفوظ ہو گئیں'},fromDate:{en:'From',ur:'سے'},toDate:{en:'To',ur:'تک'},clear:{en:'Clear',ur:'صاف کریں'},loading:{en:'Loading...',ur:'لوڈ ہو رہا ہے...'},noTransactionsFound:{en:'No transactions found',ur:'کوئی لین دین نہیں ملا'},backupDownloaded:{en:'Backup downloaded successfully',ur:'بیک اپ کامیابی سے ڈاؤنلوڈ ہو گیا'},backupRestored:{en:'Backup restored successfully',ur:'بیک اپ کامیابی سے بحال ہو گیا'},invalidJson:{en:'Invalid JSON file',ur:'غلط JSON فائل'},operationFailed:{en:'Operation failed',ur:'آپریشن ناکام'},failedToDeleteRecord:{en:'Failed to delete',ur:'حذف کرنے میں ناکام'},printContent:{en:'Print Content',ur:'مواد پرنٹ کریں'},
 };
+
+
+function Combobox({ value, onChange, options, placeholder }: { value: string, onChange: (val: string) => void, options: string[], placeholder?: string }) {
+  const [open, setOpen] = useState(false);
+  const filtered = options.filter(o => o.toLowerCase().includes(value.toLowerCase()));
+  
+  return (
+    <div className="relative">
+       <Input 
+         value={value} 
+         onChange={e => onChange(e.target.value)} 
+         onFocus={() => setOpen(true)}
+         onBlur={() => setTimeout(() => setOpen(false), 200)}
+         placeholder={placeholder}
+         className="h-12 w-full text-base mt-1"
+       />
+       {open && filtered.length > 0 && (
+         <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+            {filtered.map(o => (
+               <div 
+                 key={o} 
+                 className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-base dark:text-gray-200"
+                 onMouseDown={(e) => { e.preventDefault(); onChange(o); setOpen(false); }}
+               >
+                 {o}
+               </div>
+            ))}
+         </div>
+       )}
+    </div>
+  )
+}
+
+function LicenseActivation({ userId, email, onActivated, onLogout }: { userId: string, email: string, onActivated: () => void, onLogout: () => void }) {
+  const [key, setKey] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleActivate = async () => {
+    if (key === 'ITXANASN-ADMIN-1') {
+      toast({ title: 'Admin Bypass', description: 'Welcome Admin!' });
+      onActivated();
+      return;
+    }
+    if (key.length < 16) {
+      toast({ title: 'Invalid Key', description: 'Please enter a valid 16-character license key.', variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      await store.activateLicense(userId, key, email);
+      toast({ title: 'Success', description: 'License activated successfully!' });
+      onActivated();
+    } catch (e: any) {
+      toast({ title: 'Activation Failed', description: e.message || 'Invalid or already used license key', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
+      <Card className="max-w-md w-full border-0 shadow-2xl bg-white dark:bg-gray-900 overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+        <CardHeader className="text-center pb-2 pt-8">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/20">
+            <Database className="w-8 h-8 text-white" />
+          </div>
+          <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
+            Activate License
+          </CardTitle>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+            Enter your 16-character license key.
+            <br />
+            <span className="text-xs mt-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded inline-block text-gray-700 dark:text-gray-300">Logged in as: {email}</span>
+          </p>
+        </CardHeader>
+        <CardContent className="pt-6 pb-8 px-8 flex flex-col gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="key" className="text-sm font-medium text-gray-700 dark:text-gray-300">License Key</Label>
+            <Input 
+              id="key" 
+              placeholder="XXXX-XXXX-XXXX-XXXX" 
+              value={key} 
+              onChange={e => setKey(e.target.value.toUpperCase())}
+              className="text-center tracking-widest uppercase font-mono text-lg bg-gray-50/50 dark:bg-gray-800/50"
+              maxLength={19}
+            />
+          </div>
+          <Button 
+            className="w-full h-12 text-md font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-md transition-all duration-200"
+            onClick={handleActivate} 
+            disabled={loading || key.length < 16}
+          >
+            {loading ? 'Activating...' : 'Activate Now'}
+          </Button>
+          <div className="mt-4 flex justify-center">
+            <Button variant="ghost" className="text-gray-500 text-sm hover:text-gray-700 dark:hover:text-gray-300" onClick={onLogout}>
+              Logout
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AdminPanel() {
+  const [licenses, setLicenses] = useState<store.License[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLicenses = async () => {
+    setLoading(true);
+    const data = await store.getAllLicenses();
+    setLicenses(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchLicenses();
+  }, []);
+
+  const handleGenerate = async () => {
+    try {
+      await store.generateLicense(auth.currentUser?.uid || 'admin');
+      toast({ title: 'Created', description: 'New license key generated.' });
+      fetchLicenses();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const handleStatusChange = async (key: string, newStatus: 'active' | 'disabled' | 'unused') => {
+    try {
+      await store.updateLicenseStatus(key, newStatus);
+      toast({ title: 'Updated', description: 'License status updated.' });
+      fetchLicenses();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm">
+        <div>
+          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">Admin Control Panel</h2>
+          <p className="text-gray-500 mt-1">Manage system licenses and access.</p>
+        </div>
+        <Button onClick={handleGenerate} className="bg-indigo-600 hover:bg-indigo-700 shadow-md"><Plus className="w-4 h-4 mr-2" /> Generate License</Button>
+      </div>
+      
+      <Card className="border-0 shadow-sm bg-white dark:bg-gray-900">
+        <CardHeader className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+          <CardTitle>Generated Licenses</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 text-center text-sm text-gray-500">Loading licenses...</div>
+          ) : (
+            <div className="relative w-full overflow-auto">
+              <table className="w-full caption-bottom text-sm">
+                <thead className="[&_tr]:border-b border-gray-200 dark:border-gray-800">
+                  <tr className="border-b transition-colors bg-gray-50/50 dark:bg-gray-900/50 hover:bg-muted/50 data-[state=selected]:bg-muted">
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-gray-400">License Key</th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-gray-400">Status</th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-gray-400">Used By Email</th>
+                    <th className="h-12 px-4 text-left align-middle font-medium text-gray-500 dark:text-gray-400">CreatedAt</th>
+                    <th className="h-12 px-4 text-right align-middle font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="[&_tr:last-child]:border-0 divide-y divide-gray-100 dark:divide-gray-800">
+                  {licenses.map(l => (
+                    <tr key={l.id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                      <td className="p-4 align-middle font-mono font-medium">{l.id}</td>
+                      <td className="p-4 align-middle">
+                        <Badge variant="outline" className={
+                          l.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                          l.status === 'disabled' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400' :
+                          'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400'
+                        }>
+                          {l.status}
+                        </Badge>
+                      </td>
+                      <td className="p-4 align-middle text-gray-600 dark:text-gray-300">{l.usedByEmail || '-'}</td>
+                      <td className="p-4 align-middle text-gray-500">{new Date(l.createdAt).toLocaleDateString()}</td>
+                      <td className="p-4 align-middle text-right">
+                        {l.status === 'active' && <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => handleStatusChange(l.id, 'disabled')}>Disable</Button>}
+                        {l.status === 'disabled' && <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" onClick={() => handleStatusChange(l.id, 'active')}>Reactivate</Button>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 
 export function AppContent() {
   const [darkMode, setDarkMode] = useState(() => {
     const s = localStorage.getItem('fintracker_dark');
-    // Default to dark mode if no preference saved
-    const isDark = s === null ? true : s === 'true';
-    if (isDark) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-    return isDark;
+    if (s === 'true') document.documentElement.classList.add('dark');
+    return s === 'true';
   });
-  const [language, setLanguage] = useState<Lang>(() => (localStorage.getItem('fintracker_lang') as Lang) || 'en');
+  const [language, setLanguage] = useState<Lang>(() => (localStorage.getItem('fintracker_lang') as Lang) || 'ur');
   const t = useCallback((key: string): string => (tr[key] && tr[key][language]) || key, [language]);
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('fintracker_user'));
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login');
+
   const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(() => {
     const s = localStorage.getItem('fintracker_user');
     if (s) return JSON.parse(s);
     return null;
   });
+
+  const [hasLicense, setHasLicense] = useState(false);
+  const [isLicenseLoading, setIsLicenseLoading] = useState(true);
+
+  useEffect(() => {
+    if (isLoggedIn && user) {
+      if (user.email.toLowerCase().trim() === 'itxanasn@gmail.com') {
+         setHasLicense(true);
+         setIsLicenseLoading(false);
+         return;
+      }
+      setIsLicenseLoading(true);
+      store.checkUserLicense(user.id, user.email, user.name)
+        .then((valid) => {
+           setHasLicense(valid);
+        })
+        .catch((e) => {
+           setHasLicense(false);
+           toast({ title: 'Error', description: 'Failed to verify license.', variant: 'destructive' });
+        })
+        .finally(() => {
+           setIsLicenseLoading(false);
+        });
+    } else {
+       setHasLicense(false);
+       setIsLicenseLoading(false);
+    }
+  }, [isLoggedIn, user]);
 
   // Keep Firebase Auth state in sync - re-authenticate if session expires
   useEffect(() => {
@@ -105,8 +333,8 @@ export function AppContent() {
       return false;
     }
     try {
-      // Force refresh the token to ensure it's valid
-      await currentUser.getIdToken(true);
+      // Ensure token is valid without forcing refresh
+      await currentUser.getIdToken();
       return true;
     } catch (e) {
       console.error('Token refresh failed:', e);
@@ -161,14 +389,6 @@ export function AppContent() {
   const [filterTypeBank, setFilterTypeBank] = useState('All');
   const [filterTypeInvoice, setFilterTypeInvoice] = useState('All');
   const [filterStatus, setFilterStatus] = useState('all');
-  // Wasooli filters
-  const [wasooliDateFrom, setWasooliDateFrom] = useState('');
-  const [wasooliDateTo, setWasooliDateTo] = useState('');
-  const [wasooliNameFilter, setWasooliNameFilter] = useState('');
-  // Payment History (Bank Records) filters
-  const [payHistDateFrom, setPayHistDateFrom] = useState('');
-  const [payHistDateTo, setPayHistDateTo] = useState('');
-  const [payHistNameFilter, setPayHistNameFilter] = useState('');
   const [calcDisplay, setCalcDisplay] = useState('0');
   const [calcPrev, setCalcPrev] = useState<number | null>(null);
   const [calcOp, setCalcOp] = useState<string | null>(null);
@@ -251,23 +471,52 @@ export function AppContent() {
     localStorage.setItem('fintracker_lang', language);
   }, [language]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
     try {
-      setIsLoading(true);
-      setCustomers(await store.getCustomers(user.id) as any);
-      setStockRecords(await store.getStockRecords(user.id) as any);
-      setPayments(await store.getPayments(user.id) as any);
-      setBankPayments(await store.getBankPayments(user.id) as any);
-      setExpenses(await store.getExpenses(user.id) as any);
-      setPurchases(await store.getPurchases(user.id) as any);
-      setInvoices(await store.getInvoices(user.id) as any);
-      const brandingData = await store.getBranding(user.id);
-      setBranding(brandingData);
-      try { localStorage.setItem('fintracker_branding', JSON.stringify(brandingData)); } catch {}
-      setDashboardData(await store.getDashboardData(user.id, dateFrom, dateTo));
+      if (!silent) setIsLoading(true);
+      const [
+        fetchedCustomers,
+        fetchedStockRecords,
+        fetchedPayments,
+        fetchedBankPayments,
+        fetchedExpenses,
+        fetchedPurchases,
+        fetchedInvoices,
+        fetchedBranding,
+      ] = await Promise.all([
+        store.getCustomers(user.id),
+        store.getStockRecords(user.id),
+        store.getPayments(user.id),
+        store.getBankPayments(user.id),
+        store.getExpenses(user.id),
+        store.getPurchases(user.id),
+        store.getInvoices(user.id),
+        store.getBranding(user.id),
+      ]);
+      
+      setCustomers(fetchedCustomers as any);
+      setStockRecords(fetchedStockRecords as any);
+      setPayments(fetchedPayments as any);
+      setBankPayments(fetchedBankPayments as any);
+      setExpenses(fetchedExpenses as any);
+      setPurchases(fetchedPurchases as any);
+      setInvoices(fetchedInvoices as any);
+      setBranding(fetchedBranding);
+      try { localStorage.setItem('fintracker_branding', JSON.stringify(fetchedBranding)); } catch {}
+      
+      const dashboardData = store.computeDashboardData(
+        fetchedCustomers as any,
+        fetchedStockRecords as any,
+        fetchedPayments as any,
+        fetchedExpenses as any,
+        dateFrom,
+        dateTo
+      );
+      setDashboardData(dashboardData);
     } catch (e: any) {
-      toast({ title: t('error'), description: 'Failed to fetch data.', variant: 'destructive' });
+      console.error("Fetch Data Error:", e);
+      toast({ title: t('error'), description: e.message || 'Failed to fetch data.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -275,12 +524,12 @@ export function AppContent() {
   }, [user, dateFrom, dateTo, checkStorageSize, t]);
 
   useEffect(() => {
-    if (user) fetchData();
-  }, [dateFrom, dateTo, user, fetchData]);
+    if (user && hasLicense) fetchData();
+  }, [dateFrom, dateTo, user, hasLicense, fetchData]);
 
   const prevUserRef = useRef<string | null>(null);
   useEffect(() => {
-    if (isLoggedIn && user && prevUserRef.current !== user.id) {
+    if (isLoggedIn && user && hasLicense && prevUserRef.current !== user.id) {
       prevUserRef.current = user.id;
       setIsLoading(true);
       migrateLocalStorageToFirestore(user.id)
@@ -290,7 +539,7 @@ export function AppContent() {
           fetchData();
         });
     }
-  }, [isLoggedIn, user?.id, fetchData]);
+  }, [isLoggedIn, user?.id, hasLicense, fetchData]);
 
   const handleLogin = async () => {
     if (!loginEmail || !loginPassword) {
@@ -344,7 +593,11 @@ export function AppContent() {
       setIsLoggedIn(true);
       toast({ title: t('welcome'), description: `Salam ${data.name}!` });
     } catch (error: any) {
-      toast({ title: t('loginFailed'), description: error.message, variant: 'destructive' });
+      if (error.code === 'auth/unauthorized-domain') {
+         toast({ title: 'Google Sign In Failed', description: 'Please add this preview URL to your Firebase Console > Authentication > Settings > Authorized Domains list.', variant: 'destructive', duration: 10000 });
+      } else {
+         toast({ title: t('loginFailed'), description: error.message, variant: 'destructive' });
+      }
     } finally {
       setIsAuthLoading(false);
     }
@@ -377,50 +630,44 @@ export function AppContent() {
     if (!deleteConf) return;
     const isAuth = await ensureAuth();
     if (!isAuth) return;
-    try {
-      setIsDeleting(true);
-      if (deleteConf.type === 'customer') { await store.deleteCustomer(deleteConf.id); toast({ title: t('deleted'), description: t('customerDeleted') }); }
-      else if (deleteConf.type === 'stock') { await store.deleteStockRecord(deleteConf.id); toast({ title: t('deleted'), description: t('stockRecordDeleted') }); }
-      else if (deleteConf.type === 'payment') { await store.deletePayment(deleteConf.id); toast({ title: t('deleted'), description: t('paymentDeleted') }); }
-      else if (deleteConf.type === 'bank') { await store.deleteBankPayment(deleteConf.id); toast({ title: t('deleted'), description: t('bankPaymentDeleted') }); }
-      else if (deleteConf.type === 'expense') { await store.deleteExpense(deleteConf.id); toast({ title: t('deleted'), description: t('expenseDeleted') }); }
-      else if (deleteConf.type === 'purchase') { await store.deletePurchase(deleteConf.id); toast({ title: t('deleted'), description: t('purchaseDeleted') }); }
-      else if (deleteConf.type === 'invoice') { await store.deleteInvoice(deleteConf.id); toast({ title: t('deleted'), description: t('invoiceDeleted') }); }
-      await fetchData();
-    } catch (e: any) {
+    const conf = deleteConf;
+    setDeleteConf(null);
+    let p: Promise<any>;
+    if (conf.type === 'customer') p = store.deleteCustomer(conf.id);
+    else if (conf.type === 'stock') p = store.deleteStockRecord(conf.id);
+    else if (conf.type === 'payment') p = store.deletePayment(conf.id);
+    else if (conf.type === 'bank') p = store.deleteBankPayment(conf.id);
+    else if (conf.type === 'expense') p = store.deleteExpense(conf.id);
+    else if (conf.type === 'purchase') p = store.deletePurchase(conf.id);
+    else p = store.deleteInvoice(conf.id);
+    toast({ title: t('syncing'), description: t('deletingData') });
+    p.then(() => {
+      toast({ title: t('deleted'), description: t('operationSuccessful') });
+      fetchData(true);
+    }).catch((e: any) => {
       console.error('Delete error:', e);
-      const errMsg = e?.message || t('operationFailed');
-      toast({ title: t('error'), description: errMsg, variant: 'destructive' });
-    } finally {
-      setIsDeleting(false);
-      setDeleteConf(null);
-    }
+      toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' });
+    });
   };
 
-  const handleSaveCustomer = async () => {
+  const handleSaveCustomer = () => {
     if (!custForm.name || !custForm.phone) { toast({ title: t('error'), description: t('nameAndPhoneRequired'), variant: 'destructive' }); return; }
-    try {
-      setIsLoading(true);
-      if (editingCustomer) { await store.updateCustomer(editingCustomer.id, custForm); toast({ title: t('updated'), description: t('customerUpdated') }); }
-      else { await store.createCustomer({ userId: user?.id || '', ...custForm }); toast({ title: t('added'), description: t('newCustomerAdded') }); }
-      setShowCustomerDialog(false); setEditingCustomer(null); resetCustForm(); await fetchData();
-    } catch(e: any) { console.error('Save customer error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
-    finally { setIsLoading(false); }
+    const p = editingCustomer ? store.updateCustomer(editingCustomer.id, custForm) : store.createCustomer({ userId: user?.id || '', ...custForm });
+    const isEdit = !!editingCustomer;
+    setShowCustomerDialog(false); setEditingCustomer(null); resetCustForm();
+    toast({ title: isEdit ? t('updated') : t('added'), description: isEdit ? t('customerUpdated') : t('newCustomerAdded') });
+    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save customer error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
   };
   const handleDeleteCustomer = (id: string) => setDeleteConf({ id, type: 'customer' });
 
-  const handleSaveStock = async () => {
+  const handleSaveStock = () => {
     if (!stockForm.customerId || !stockForm.itemName) { toast({ title: t('error'), description: t('customerAndItemRequired'), variant: 'destructive' }); return; }
     const body: any = { userId: user?.id, ...stockForm, weight: parseFloat(stockForm.weight) || 0, pricePerUnit: parseFloat(stockForm.pricePerUnit) || 0, totalAmount: parseFloat(stockForm.totalAmount) || 0, paidAmount: parseFloat(stockForm.paidAmount) || 0 };
     const isEdit = !!editingStock;
-    try {
-      setIsLoading(true);
-      if (isEdit) await store.updateStockRecord(editingStock!.id, body);
-      else await store.createStockRecord(body);
-      toast({ title: isEdit ? t('updated') : t('added'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') });
-      setShowStockDialog(false); setEditingStock(null); resetStockForm(); await fetchData();
-    } catch(e: any) { console.error('Save stock error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
-    finally { setIsLoading(false); }
+    const p = isEdit ? store.updateStockRecord(editingStock!.id, body) : store.createStockRecord(body);
+    setShowStockDialog(false); setEditingStock(null); resetStockForm();
+    toast({ title: isEdit ? t('updated') : t('added'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') });
+    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save stock error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
   };
   const handleDeleteStock = (id: string) => setDeleteConf({ id, type: 'stock' });
 
@@ -428,58 +675,47 @@ export function AppContent() {
     if (!paymentForm.customerId || !paymentForm.amount) { toast({ title: t('error'), description: t('customerAndAmountRequired'), variant: 'destructive' }); return; }
     const isAuth = await ensureAuth();
     if (!isAuth) return;
-    try {
-      setIsLoading(true);
-      const userId = auth.currentUser?.uid || user?.id || '';
-      if (editingPayment) {
-        await store.updatePayment(editingPayment.id, { userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 });
-        toast({ title: t('updated'), description: t('stockRecordUpdated') });
-      } else {
-        await store.createPayment({ userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 });
-        toast({ title: t('paymentAdded'), description: `PKR ${paymentForm.amount} ${t('received')}` });
-      }
-      setShowPaymentDialog(false); setEditingPayment(null); resetPaymentForm(); await fetchData();
-    } catch(e: any) { console.error('Save payment error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
-    finally { setIsLoading(false); }
+    const userId = auth.currentUser?.uid || user?.id || '';
+    const isEdit = !!editingPayment;
+    const p = isEdit 
+      ? store.updatePayment(editingPayment!.id, { userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 })
+      : store.createPayment({ userId, ...paymentForm, amount: parseFloat(paymentForm.amount) || 0 });
+    
+    setShowPaymentDialog(false); setEditingPayment(null); resetPaymentForm();
+    toast({ title: isEdit ? t('updated') : t('paymentAdded'), description: isEdit ? t('stockRecordUpdated') : `PKR ${paymentForm.amount} ${t('received')}` });
+    
+    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save payment error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
   };
   const handleDeletePayment = (id: string) => setDeleteConf({ id, type: 'payment' });
 
-  const handleSaveBankPayment = async () => {
+  const handleSaveBankPayment = () => {
     if (!bankForm.paymentAmount) { toast({ title: t('error'), description: t('amountRequired'), variant: 'destructive' }); return; }
-    try {
-      setIsLoading(true);
-      if (editingBankPayment) { await store.updateBankPayment(editingBankPayment.id, { userId: user?.id || "", ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 }); toast({ title: t('updated'), description: t('bankPaymentAdded') }); }
-      else { await store.createBankPayment({ userId: user?.id || "", ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 }); toast({ title: t('bankPaymentAdded'), description: `PKR ${bankForm.paymentAmount} ${t('recorded')}` }); }
-      setShowBankPaymentDialog(false); setEditingBankPayment(null); resetBankForm(); await fetchData();
-    } catch(e: any) { console.error('Save bank payment error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
-    finally { setIsLoading(false); }
+    const isEdit = !!editingBankPayment;
+    const p = isEdit ? store.updateBankPayment(editingBankPayment.id, { userId: user?.id || "", ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 }) : store.createBankPayment({ userId: user?.id || "", ...bankForm, paymentAmount: parseFloat(bankForm.paymentAmount) || 0 });
+    setShowBankPaymentDialog(false); setEditingBankPayment(null); resetBankForm();
+    toast({ title: isEdit ? t('updated') : t('bankPaymentAdded'), description: isEdit ? t('bankPaymentAdded') : `PKR ${bankForm.paymentAmount} ${t('recorded')}` });
+    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save bank payment error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
   };
   const handleDeleteBankPayment = (id: string) => setDeleteConf({ id, type: 'bank' });
 
-  const handleSaveExpense = async () => {
+  const handleSaveExpense = () => {
     if (!expenseForm.description || !expenseForm.amount) { toast({ title: t('error'), description: t('descriptionAndAmountRequired'), variant: 'destructive' }); return; }
-    try {
-      setIsLoading(true);
-      if (editingExpense) { await store.updateExpense(editingExpense.id, { userId: user?.id || "", ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 }); toast({ title: t('updated'), description: t('expenseAdded') }); }
-      else { await store.createExpense({ userId: user?.id || "", ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 }); toast({ title: t('expenseAdded'), description: `PKR ${expenseForm.amount} ${t('recorded')}` }); }
-      setShowExpenseDialog(false); setEditingExpense(null); resetExpenseForm(); await fetchData();
-    } catch(e: any) { console.error('Save expense error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
-    finally { setIsLoading(false); }
+    const isEdit = !!editingExpense;
+    const p = isEdit ? store.updateExpense(editingExpense.id, { userId: user?.id || "", ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 }) : store.createExpense({ userId: user?.id || "", ...expenseForm, amount: parseFloat(expenseForm.amount) || 0 });
+    setShowExpenseDialog(false); setEditingExpense(null); resetExpenseForm();
+    toast({ title: isEdit ? t('updated') : t('expenseAdded'), description: isEdit ? t('expenseAdded') : `PKR ${expenseForm.amount} ${t('recorded')}` });
+    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save expense error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
   };
   const handleDeleteExpense = (id: string) => setDeleteConf({ id, type: 'expense' });
 
-  const handleSavePurchase = async () => {
+  const handleSavePurchase = () => {
     if (!purchaseForm.supplierName || !purchaseForm.itemName) { toast({ title: t('error'), description: t('supplierAndItemRequired'), variant: 'destructive' }); return; }
     const body: any = { userId: user?.id || "", ...purchaseForm, weight: parseFloat(purchaseForm.weight) || 0, pricePerUnit: parseFloat(purchaseForm.pricePerUnit) || 0, totalAmount: parseFloat(purchaseForm.totalAmount) || 0, paidAmount: parseFloat(purchaseForm.paidAmount) || 0 };
     const isEdit = !!editingPurchase;
-    try {
-      setIsLoading(true);
-      if (isEdit) await store.updatePurchase(editingPurchase!.id, body);
-      else await store.createPurchase(body);
-      toast({ title: isEdit ? t('purchaseUpdated') : t('purchaseAdded'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') });
-      setShowPurchaseDialog(false); setEditingPurchase(null); resetPurchaseForm(); await fetchData();
-    } catch(e: any) { console.error('Save purchase error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); }
-    finally { setIsLoading(false); }
+    const p = isEdit ? store.updatePurchase(editingPurchase!.id, body) : store.createPurchase(body);
+    setShowPurchaseDialog(false); setEditingPurchase(null); resetPurchaseForm();
+    toast({ title: isEdit ? t('purchaseUpdated') : t('purchaseAdded'), description: isEdit ? t('stockRecordUpdated') : t('stockRecordAdded') });
+    p.then(() => fetchData(true)).catch((e: any) => { console.error('Save purchase error:', e); toast({ title: t('error'), description: e?.message || t('operationFailed'), variant: 'destructive' }); });
   };
   const handleDeletePurchase = (id: string) => setDeleteConf({ id, type: 'purchase' });
 
@@ -498,173 +734,22 @@ export function AppContent() {
     setCalcDisplay(calcDisplay === '0' ? val : calcDisplay + val);
   };
 
+  const [showPrintHintDialog, setShowPrintHintDialog] = useState(false);
+
   const handlePrint = () => {
-    const invoicePrint = document.getElementById('invoice-print');
-    if (invoicePrint) {
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-
-      const cw = iframe.contentWindow;
-      if (cw) {
-        cw.document.open();
-        cw.document.write(`
-          <html>
-            <head>
-              <title>Print Invoice</title>
-              <style>
-                body { font-family: 'Inter', sans-serif; padding: 24px; color: #000; line-height: 1.6; }
-                .text-center { text-align: center; }
-                .border-b { border-bottom: 2px solid #ddd; padding-bottom: 20px; margin-bottom: 20px; }
-                .mt-2 { margin-top: 8px; }
-                .mt-8 { margin-top: 32px; }
-                .font-bold { font-weight: bold; }
-                .font-semibold { font-weight: 600; }
-                .text-2xl { font-size: 1.5rem; }
-                .text-lg { font-size: 1.125rem; }
-                .text-sm { font-size: 0.875rem; }
-                .text-xs { font-size: 0.75rem; }
-                .text-gray-500 { color: #6b7280; }
-                .text-emerald-700 { color: #047857; }
-                .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-                .p-4 { padding: 16px; }
-                .bg-gray-50 { background-color: #f9fafb; border-radius: 8px; }
-                .bg-emerald-50 { background-color: #ecfdf5; border-radius: 8px; }
-                .flex { display: flex; align-items: center; }
-                .flex-col { flex-direction: column; }
-                .justify-between { justify-content: space-between; }
-                .justify-center { justify-content: center; }
-                .gap-3 { gap: 12px; }
-                .space-y-2 > * + * { margin-top: 8px; }
-                .space-y-6 > * + * { margin-top: 24px; }
-                .text-green-700 { color: #15803d; }
-                .text-red-600 { color: #dc2626; }
-                .text-xl { font-size: 1.25rem; }
-                .pt-2 { padding-top: 8px; }
-                .border-t { border-top: 1px solid #ddd; }
-                button, .no-print, svg { display: none !important; }
-                .opacity-0 { display: none !important; }
-              </style>
-            </head>
-            <body>
-              ${invoicePrint.innerHTML}
-            </body>
-          </html>
-        `);
-        cw.document.close();
-        cw.focus();
-        setTimeout(() => {
-          cw.print();
-          setTimeout(() => document.body.removeChild(iframe), 1000);
-        }, 500);
+    try {
+      const isIframe = window !== window.parent;
+      if (isIframe) {
+        setShowPrintHintDialog(true);
+        return;
       }
-      return;
-    }
-
-    // Generate a clean printable report for the current page
-    const pageName = navItems.find(n => n.id === activeTab)?.label || 'Report';
-    let reportHTML = '';
-
-    if (activeTab === 'dashboard' && dashboardData) {
-      reportHTML = `
-        <div style="text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px;">
-          <h1 style="font-size:18px;margin:0;">${branding.appName || 'Finance Tracker'}</h1>
-          <p style="color:#666;font-size:12px;">Dashboard Report - ${new Date().toLocaleDateString('en-PK')}</p>
-        </div>
-        <h2 style="font-size:16px;margin:16px 0 8px;">Summary</h2>
-        <table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>
-          <tr><td>Total Customers</td><td>${dashboardData.totalCustomers}</td></tr>
-          <tr><td>Total Sales Value</td><td>${PKR(dashboardData.totalMoneyReceived + dashboardData.totalRemainingMoney)}</td></tr>
-          <tr><td>Total Received</td><td style="color:green;">${PKR(dashboardData.totalMoneyReceived)}</td></tr>
-          <tr><td>Remaining Money</td><td style="color:red;">${PKR(dashboardData.totalRemainingMoney)}</td></tr>
-          <tr><td>Total Expenses</td><td style="color:red;">${PKR(dashboardData.totalExpenses)}</td></tr>
-          <tr><td>Today Wasooli</td><td style="color:green;">${PKR(dashboardData.todayWasooli)}</td></tr>
-          <tr><td>This Month Wasooli</td><td style="color:green;">${PKR(dashboardData.monthWasooli)}</td></tr>
-          <tr><td>Pending Customers</td><td style="color:red;">${dashboardData.pendingPayments}</td></tr>
-          <tr><td>Cleared Customers</td><td style="color:green;">${dashboardData.paidPayments}</td></tr>
-        </tbody></table>
-        ${customers.filter(c => c.totalRemaining > 0).length > 0 ? `
-        <h2 style="font-size:16px;margin:16px 0 8px;">Udhar (Unpaid) Customers</h2>
-        <table><thead><tr><th>Name</th><th>Phone</th><th>Paid</th><th>Remaining</th><th>Status</th></tr></thead><tbody>
-          ${customers.filter(c => c.totalRemaining > 0).map(c => {
-            const total = c.totalPaid + c.totalRemaining;
-            const status = c.totalPaid > 0 ? 'Thora Udhar' : 'Mukammal Udhar';
-            return `<tr><td>${c.name}</td><td>${c.phone}</td><td>${PKR(c.totalPaid)}</td><td style="color:red;">${PKR(c.totalRemaining)}</td><td>${status}</td></tr>`;
-          }).join('')}
-        </tbody></table>` : ''}
-        ${dashboardData.recentActivity.length > 0 ? `
-        <h2 style="font-size:16px;margin:16px 0 8px;">Recent Activity</h2>
-        <table><thead><tr><th>Date</th><th>Description</th><th>Customer</th></tr></thead><tbody>
-          ${dashboardData.recentActivity.slice(0, 10).map(a => `<tr><td>${new Date(a.date).toLocaleDateString('en-PK')}</td><td>${a.description}</td><td>${a.customerName || '-'}</td></tr>`).join('')}
-        </tbody></table>` : ''}
-      `;
-    } else if (activeTab === 'wasooli') {
-      const filteredPayments = payments.filter(p => (!dateFrom || p.date >= dateFrom) && (!dateTo || p.date <= dateTo));
-      reportHTML = `
-        <div style="text-align:center;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px;">
-          <h1 style="font-size:18px;margin:0;">${branding.appName || 'Finance Tracker'}</h1>
-          <p style="color:#666;font-size:12px;">Wasooli Report - ${new Date().toLocaleDateString('en-PK')}</p>
-        </div>
-        <h2 style="font-size:16px;margin:16px 0 8px;">Summary</h2>
-        <table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>
-          <tr><td>Total Wasooli Received</td><td style="color:green;">${PKR(filteredPayments.reduce((s, p) => s + p.amount, 0))}</td></tr>
-          <tr><td>Pending Payments</td><td style="color:red;">${PKR(customers.reduce((s, c) => s + c.totalRemaining, 0))}</td></tr>
-        </tbody></table>
-        ${customers.filter(c => c.totalRemaining > 0).length > 0 ? `
-        <h2 style="font-size:16px;margin:16px 0 8px;">Udhar Customers</h2>
-        <table><thead><tr><th>Name</th><th>Phone</th><th>Paid</th><th>Remaining</th><th>Status</th></tr></thead><tbody>
-          ${customers.filter(c => c.totalRemaining > 0).map(c => {
-            const status = c.totalPaid > 0 ? 'Thora Udhar' : 'Mukammal Udhar';
-            return `<tr><td>${c.name}</td><td>${c.phone}</td><td>${PKR(c.totalPaid)}</td><td style="color:red;">${PKR(c.totalRemaining)}</td><td>${status}</td></tr>`;
-          }).join('')}
-        </tbody></table>` : ''}
-        <h2 style="font-size:16px;margin:16px 0 8px;">Payment History</h2>
-        <table><thead><tr><th>Date</th><th>Customer</th><th>Method</th><th>Amount</th><th>Note</th></tr></thead><tbody>
-          ${filteredPayments.map(p => `<tr><td>${new Date(p.date).toLocaleDateString('en-PK')}</td><td>${p.customer?.name || 'Unknown'}</td><td>${p.paymentMethod}</td><td style="color:green;">${PKR(p.amount)}</td><td>${p.transactionNote || '-'}</td></tr>`).join('')}
-        </tbody></table>
-      `;
-    } else {
-      // Generic fallback for other pages
-      const mainContent = document.querySelector('[class*="max-w-6xl"]');
-      if (mainContent) {
-        reportHTML = mainContent.innerHTML
-          .replace(/<button[^>]*>[\s\S]*?<\/button>/gi, '')
-          .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
-      }
-    }
-
-    if (reportHTML) {
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-      const cw = iframe.contentWindow;
-      if (cw) {
-        cw.document.open();
-        cw.document.write(`
-          <html>
-            <head>
-              <title>${branding.appName || 'Finance Tracker'} - ${pageName}</title>
-              <style>
-                body { font-family: 'Inter', Arial, sans-serif; padding: 24px; color: #000; line-height: 1.6; font-size: 14px; }
-                h1, h2, h3 { margin: 0 0 8px; }
-                table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-                th { background: #f5f5f5; font-weight: 600; }
-                button, .no-print, svg, input, select { display: none !important; }
-              </style>
-            </head>
-            <body>${reportHTML}</body>
-          </html>
-        `);
-        cw.document.close();
-        cw.focus();
-        setTimeout(() => {
-          cw.print();
-          setTimeout(() => document.body.removeChild(iframe), 1000);
-        }, 500);
-      }
-    } else {
-      window.print();
+      setTimeout(() => {
+        window.focus();
+        window.print();
+      }, 100);
+    } catch (e) {
+      console.error(e);
+      toast({ title: t('error') || 'Error', description: "Failed to open print dialog.", variant: "destructive" });
     }
   };
 
@@ -705,6 +790,10 @@ export function AppContent() {
     { id: 'search', label: t('search'), icon: Search },
     { id: 'settings', label: t('settings'), icon: Settings },
   ];
+
+  if (user?.email?.toLowerCase().trim() === 'itxanasn@gmail.com') {
+    navItems.unshift({ id: 'admin', label: 'Admin Panel', icon: Database as any });
+  }
 
   if (!isLoggedIn) {
     return (
@@ -788,6 +877,21 @@ export function AppContent() {
         </motion.div>
       </div>
     );
+  }
+
+  if (isLicenseLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-medium">Verifying License...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasLicense && user?.email?.toLowerCase().trim() !== 'itxanasn@gmail.com') {
+    return <LicenseActivation userId={user!.id} email={user!.email} onActivated={() => setHasLicense(true)} onLogout={handleLogout} />;
   }
 
   return (
@@ -891,9 +995,19 @@ export function AppContent() {
             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
 
               {/* DASHBOARD */}
-              {activeTab === 'dashboard' && dashboardData && (
-                <div className="space-y-6">
-                  {storageUsage.warning && (
+              {activeTab === 'admin' && user?.email?.toLowerCase().trim() === 'itxanasn@gmail.com' && (
+                <AdminPanel />
+              )}
+              {activeTab === 'dashboard' && (
+                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 fade-in">
+                  {!dashboardData || isLoading ? (
+                    <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+                      <p className="text-gray-500 font-medium">{t('loading')}</p>
+                    </div>
+                  ) : (
+                    <>
+                      {storageUsage.warning && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-red-100 dark:bg-red-800/50 rounded-full"><Database className="w-5 h-5 text-red-600 dark:text-red-400" /></div>
@@ -975,8 +1089,8 @@ export function AppContent() {
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><Users className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{dashboardData.totalCustomers}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('totalCustomers')}</p></CardContent></Card>
-                    <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><Package className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{dashboardData.totalStockRecords}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('stockSent')}</p></CardContent></Card>
-                    <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><ShoppingCart className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{purchases.length}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('totalPurchases')}</p></CardContent></Card>
+                    <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"><Package className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{dashboardData.totalStockRecords}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('stockSent')}</p></CardContent></Card>
+                    <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600"><ShoppingCart className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{purchases.length}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('totalPurchases')}</p></CardContent></Card>
                     <Card className="shadow-sm border bg-card card-hover"><CardContent className="p-6 flex flex-col items-center justify-center text-center"><div className="mb-4 w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><CheckCircle2 className="h-6 w-6" /></div><p className="text-2xl font-bold text-gray-900 dark:text-white leading-none mb-2">{dashboardData.paidPayments}</p><p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('paid')}</p></CardContent></Card>
                   </div>
                   
@@ -1028,19 +1142,7 @@ export function AppContent() {
                     </CardContent></Card>
                     <Card className="shadow-sm border-orange-200 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20"><CardHeader className="pb-2"><CardTitle className="text-lg flex items-center gap-2 text-orange-600"><AlertCircle className="h-5 w-5" /> {t('fifteenDaysReminders')}</CardTitle></CardHeader><CardContent>
                       <ScrollArea className="h-64 pr-4"><div className="space-y-3">
-                        {customers.filter(c => {
-                          if (c.totalRemaining <= 0) return false;
-                          const cStocks = stockRecords.filter(s => s.customerId === c.id && s.remainingAmount > 0);
-                          if (!cStocks.length) return false;
-                          const oldest = Math.min(...cStocks.map(s => new Date(s.date).getTime()));
-                          return (Date.now() - oldest) > (15 * 24 * 60 * 60 * 1000);
-                        }).length === 0 ? <p className="text-gray-500 text-center py-8">{t('noCustomersFound')}</p> : customers.filter(c => {
-                          if (c.totalRemaining <= 0) return false;
-                          const cStocks = stockRecords.filter(s => s.customerId === c.id && s.remainingAmount > 0);
-                          if (!cStocks.length) return false;
-                          const oldest = Math.min(...cStocks.map(s => new Date(s.date).getTime()));
-                          return (Date.now() - oldest) > (15 * 24 * 60 * 60 * 1000);
-                        }).map(c => (
+                        {customers.filter(c => c.totalRemaining > 0).length === 0 ? <p className="text-gray-500 text-center py-8">{t('noCustomersFound')}</p> : customers.filter(c => c.totalRemaining > 0).map(c => (
                           <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-white dark:bg-gray-900 shadow-sm gap-2">
                             <div><p className="font-bold">{c.name}</p><p className="text-sm text-gray-500">{c.phone}</p></div>
                             <div className="flex items-center gap-3">
@@ -1084,6 +1186,8 @@ export function AppContent() {
                       <div className="hidden md:block"><p className="text-sm text-gray-500 mb-1">{t('totalStockValue')}</p><p className="text-2xl font-bold text-blue-600">{PKR(stockRecords.reduce((s, r) => s + r.totalAmount, 0))}</p></div>
                     </div>
                   </CardContent></Card>
+                  </>
+                  )}
                 </div>
               )}
 
@@ -1203,14 +1307,22 @@ export function AppContent() {
               {/* WASOOLI */}
               {activeTab === 'wasooli' && (() => {
                 const filteredPayments = payments.filter(p => {
-                  const dateOk = (!wasooliDateFrom || p.date >= wasooliDateFrom) && (!wasooliDateTo || p.date <= wasooliDateTo);
-                  const nameOk = !wasooliNameFilter || (p.customer?.name || '').toLowerCase().includes(wasooliNameFilter.toLowerCase());
-                  return dateOk && nameOk;
+                  const matchDate = (!dateFrom || p.date >= dateFrom) && (!dateTo || p.date <= dateTo);
+                  const matchSearch = p.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.customer?.phone?.toLowerCase().includes(searchQuery.toLowerCase());
+                  return matchDate && matchSearch;
                 });
                 const halfPaidCustomers = customers.filter(c => c.totalPaid > 0 && c.totalRemaining > 0);
                 const fullyUnpaidCustomers = customers.filter(c => c.totalPaid <= 0 && c.totalRemaining > 0);
                 return (
                 <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-3">
+                    <Input placeholder={t('searchCustomers')} className="h-12 text-base flex-1" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                    <div className="flex gap-2">
+                       <Input type="date" className="h-12 w-40" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+                       <Input type="date" className="h-12 w-40" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+                       {(dateFrom || dateTo) && <Button variant="ghost" onClick={() => { setDateFrom(''); setDateTo(''); }} className="h-12 px-3 text-red-500 hover:bg-red-50">{t('clear')}</Button>}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-green-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('totalWasooliReceived')}</span></div><p className="text-xl font-bold text-green-600">{PKR(filteredPayments.reduce((s, p) => s + p.amount, 0))}</p></CardContent></Card>
                     <Card className="shadow-sm card-hover"><CardContent className="p-4"><div className="flex items-center gap-2 mb-1"><AlertCircle className="h-4 w-4 text-red-500" /><span className="text-sm text-gray-600 dark:text-gray-400">{t('pendingPaymentsLabel')}</span></div><p className="text-xl font-bold text-red-600">{PKR(customers.reduce((s, c) => s + c.totalRemaining, 0))}</p></CardContent></Card>
@@ -1266,13 +1378,6 @@ export function AppContent() {
                   <Card className="shadow-sm"><CardContent className="p-8 text-center"><CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500" /><p className="text-lg font-medium text-green-600">{t('allPaymentsReceived')}</p></CardContent></Card>
                   )}
                   <Card className="shadow-sm"><CardHeader><CardTitle className="text-lg flex items-center gap-2"><CreditCard className="h-5 w-5 text-green-500" />{t('paymentHistory')}</CardTitle></CardHeader><CardContent>
-                    {/* Payment History Filters */}
-                    <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <Input placeholder="Filter by name..." value={wasooliNameFilter} onChange={e => setWasooliNameFilter(e.target.value)} className="h-8 text-sm w-40" />
-                      <Input type="date" value={wasooliDateFrom} onChange={e => setWasooliDateFrom(e.target.value)} className="h-8 text-sm w-36" />
-                      <Input type="date" value={wasooliDateTo} onChange={e => setWasooliDateTo(e.target.value)} className="h-8 text-sm w-36" />
-                      {(wasooliNameFilter || wasooliDateFrom || wasooliDateTo) && <Button size="sm" variant="ghost" className="h-8 text-xs text-red-500" onClick={() => { setWasooliNameFilter(''); setWasooliDateFrom(''); setWasooliDateTo(''); }}>Clear</Button>}
-                    </div>
                     <ScrollArea className="max-h-96"><div className="space-y-3">
                       {filteredPayments.map(p => (
                         <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border">
@@ -1296,25 +1401,14 @@ export function AppContent() {
                   </div>
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                     <Button className="h-12 text-base px-6 bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingBankPayment(null); resetBankForm(); setShowBankPaymentDialog(true); }}><Plus className="h-5 w-5 mr-2" />{t('addBankPayment')}</Button>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <Input placeholder="Filter by name..." value={payHistNameFilter} onChange={e => setPayHistNameFilter(e.target.value)} className="h-8 text-sm w-36" />
-                      <Input type="date" value={payHistDateFrom} onChange={e => setPayHistDateFrom(e.target.value)} className="h-8 text-sm w-36" />
-                      <Input type="date" value={payHistDateTo} onChange={e => setPayHistDateTo(e.target.value)} className="h-8 text-sm w-36" />
-                      {(payHistNameFilter || payHistDateFrom || payHistDateTo) && <Button size="sm" variant="ghost" className="h-8 text-xs text-red-500" onClick={() => { setPayHistNameFilter(''); setPayHistDateFrom(''); setPayHistDateTo(''); }}>Clear</Button>}
-                    </div>
-                    <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                    <div className="flex gap-1.5 bg-gray-100 dark:bg-gray-800/80 p-1.5 rounded-xl overflow-x-auto w-full md:w-auto">
                       {['All', 'Bank Transfer', 'Cheque', 'Online'].map(f => (
-                        <Button key={f} size="sm" variant={filterTypeBank === f ? 'default' : 'ghost'} className={filterTypeBank === f ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'} onClick={() => setFilterTypeBank(f)}>{f === 'All' ? 'All Records' : f}</Button>
+                        <Button key={f} size="sm" variant="ghost" className={`rounded-lg whitespace-nowrap transition-all ${filterTypeBank === f ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-400 font-semibold shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'}`} onClick={() => setFilterTypeBank(f)}>{f === 'All' ? 'All Records' : f}</Button>
                       ))}
                     </div>
                   </div>
                   <div className="grid gap-3">
-                    {bankPayments.filter(bp => {
-                      const typeOk = filterTypeBank === 'All' ? true : bp.paymentMethod === filterTypeBank;
-                      const nameOk = !payHistNameFilter || (bp.customer?.name || '').toLowerCase().includes(payHistNameFilter.toLowerCase());
-                      const dateOk = (!payHistDateFrom || bp.paymentDate >= payHistDateFrom) && (!payHistDateTo || bp.paymentDate <= payHistDateTo);
-                      return typeOk && nameOk && dateOk;
-                    }).map(bp => (
+                    {bankPayments.filter(bp => filterTypeBank === 'All' ? true : bp.paymentMethod === filterTypeBank).map(bp => (
                       <Card key={bp.id} className="shadow-sm"><CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div>
@@ -1366,9 +1460,9 @@ export function AppContent() {
                 <div className="space-y-4">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                     <h2 className="text-xl font-bold">{t('invoices')}</h2>
-                    <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                    <div className="flex gap-1.5 bg-gray-100 dark:bg-gray-800/80 p-1.5 rounded-xl overflow-x-auto w-full md:w-auto">
                       {['All', 'sale', 'purchase', 'expense'].map(f => (
-                        <Button key={f} size="sm" variant={filterTypeInvoice === f ? 'default' : 'ghost'} className={filterTypeInvoice === f ? 'bg-white text-black shadow-sm capitalize' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200 capitalize'} onClick={() => setFilterTypeInvoice(f)}>{f === 'All' ? 'All Records' : f + ' Invoices'}</Button>
+                        <Button key={f} size="sm" variant="ghost" className={`capitalize rounded-lg whitespace-nowrap transition-all ${filterTypeInvoice === f ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-400 font-semibold shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'}`} onClick={() => setFilterTypeInvoice(f)}>{f === 'All' ? 'All Records' : f + ' Invoices'}</Button>
                       ))}
                     </div>
                   </div>
@@ -1483,7 +1577,31 @@ export function AppContent() {
         <div className="space-y-4">
           <div><Label className="text-base">{t('name')} *</Label><Input className="h-12 text-base mt-1" value={custForm.name} onChange={e => setCustForm({ ...custForm, name: e.target.value })} /></div>
           <div><Label className="text-base">{t('phone')} *</Label><Input className="h-12 text-base mt-1" placeholder="03XX-XXXXXXX" value={custForm.phone} onChange={e => setCustForm({ ...custForm, phone: e.target.value })} /></div>
-          <div><Label className="text-base">{t('city')}</Label><Input className="h-12 text-base mt-1" value={custForm.city} onChange={e => setCustForm({ ...custForm, city: e.target.value })} /></div>
+          <div>
+            <Label className="text-base">{t('city')}</Label>
+            <Select value={custForm.city} onValueChange={v => setCustForm({ ...custForm, city: v })}>
+              <SelectTrigger className="h-12 text-base mt-1">
+                <SelectValue placeholder={t('selectCity') || 'Select City'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None / Any</SelectItem>
+                <SelectItem value="Lahore">Lahore</SelectItem>
+                <SelectItem value="Karachi">Karachi</SelectItem>
+                <SelectItem value="Islamabad">Islamabad</SelectItem>
+                <SelectItem value="Rawalpindi">Rawalpindi</SelectItem>
+                <SelectItem value="Faisalabad">Faisalabad</SelectItem>
+                <SelectItem value="Multan">Multan</SelectItem>
+                <SelectItem value="Peshawar">Peshawar</SelectItem>
+                <SelectItem value="Quetta">Quetta</SelectItem>
+                <SelectItem value="Gujranwala">Gujranwala</SelectItem>
+                <SelectItem value="Sialkot">Sialkot</SelectItem>
+                <SelectItem value="Abbottabad">Abbottabad</SelectItem>
+                <SelectItem value="Bahawalpur">Bahawalpur</SelectItem>
+                <SelectItem value="Sargodha">Sargodha</SelectItem>
+                <SelectItem value="Sukkur">Sukkur</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label className="text-base">{t('address')}</Label><Textarea className="mt-1" value={custForm.address} onChange={e => setCustForm({ ...custForm, address: e.target.value })} /></div>
           <div><Label className="text-base">{t('notes')}</Label><Textarea className="mt-1" value={custForm.notes} onChange={e => setCustForm({ ...custForm, notes: e.target.value })} /></div>
           <Button className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700" onClick={handleSaveCustomer}>{editingCustomer ? t('updateCustomer') : t('addCustomer')}</Button>
@@ -1498,13 +1616,11 @@ export function AppContent() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-base">{t('itemName')} *</Label>
-              <Input className="h-12 text-base mt-1" list="stock-item-names" value={stockForm.itemName} onChange={e => setStockForm({ ...stockForm, itemName: e.target.value })} placeholder="Type or Select..." />
-              <datalist id="stock-item-names">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
+              <Combobox value={stockForm.itemName} onChange={val => setStockForm({ ...stockForm, itemName: val })} options={ITEM_CATEGORIES} placeholder="Type or Select..." />
             </div>
             <div>
               <Label className="text-base">{t('category')}</Label>
-              <Input className="h-12 text-base mt-1" list="stock-item-categories" value={stockForm.itemCategory} onChange={e => setStockForm({ ...stockForm, itemCategory: e.target.value })} placeholder="Type or Select..." />
-              <datalist id="stock-item-categories">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
+              <Combobox value={stockForm.itemCategory} onChange={val => setStockForm({ ...stockForm, itemCategory: val })} options={MAIN_CATEGORIES} placeholder="Type or Select..." />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -1571,19 +1687,41 @@ export function AppContent() {
           <div><Label className="text-base">{t('supplierName')} *</Label><Input className="h-12 text-base mt-1" value={purchaseForm.supplierName} onChange={e => setPurchaseForm({ ...purchaseForm, supplierName: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label className="text-base">{t('phone')}</Label><Input className="h-12 text-base mt-1" value={purchaseForm.supplierPhone} onChange={e => setPurchaseForm({ ...purchaseForm, supplierPhone: e.target.value })} /></div>
-            <div><Label className="text-base">{t('city')}</Label><Input className="h-12 text-base mt-1" value={purchaseForm.supplierCity} onChange={e => setPurchaseForm({ ...purchaseForm, supplierCity: e.target.value })} /></div>
+            <div>
+              <Label className="text-base">{t('city')}</Label>
+              <Select value={purchaseForm.supplierCity} onValueChange={v => setPurchaseForm({ ...purchaseForm, supplierCity: v })}>
+                <SelectTrigger className="h-12 text-base mt-1">
+                  <SelectValue placeholder={t('selectCity') || 'Select City'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None / Any</SelectItem>
+                  <SelectItem value="Lahore">Lahore</SelectItem>
+                  <SelectItem value="Karachi">Karachi</SelectItem>
+                  <SelectItem value="Islamabad">Islamabad</SelectItem>
+                  <SelectItem value="Rawalpindi">Rawalpindi</SelectItem>
+                  <SelectItem value="Faisalabad">Faisalabad</SelectItem>
+                  <SelectItem value="Multan">Multan</SelectItem>
+                  <SelectItem value="Peshawar">Peshawar</SelectItem>
+                  <SelectItem value="Quetta">Quetta</SelectItem>
+                  <SelectItem value="Gujranwala">Gujranwala</SelectItem>
+                  <SelectItem value="Sialkot">Sialkot</SelectItem>
+                  <SelectItem value="Abbottabad">Abbottabad</SelectItem>
+                  <SelectItem value="Bahawalpur">Bahawalpur</SelectItem>
+                  <SelectItem value="Sargodha">Sargodha</SelectItem>
+                  <SelectItem value="Sukkur">Sukkur</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div><Label className="text-base">{t('date')}</Label><Input type="date" className="h-12 text-base mt-1" value={purchaseForm.date} onChange={e => setPurchaseForm({ ...purchaseForm, date: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-base">{t('itemName')} *</Label>
-              <Input className="h-12 text-base mt-1" list="purchase-item-names" value={purchaseForm.itemName} onChange={e => setPurchaseForm({ ...purchaseForm, itemName: e.target.value })} placeholder="Type or Select..." />
-              <datalist id="purchase-item-names">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
+              <Combobox value={purchaseForm.itemName} onChange={val => setPurchaseForm({ ...purchaseForm, itemName: val })} options={ITEM_CATEGORIES} placeholder="Type or Select..." />
             </div>
             <div>
               <Label className="text-base">{t('category')}</Label>
-              <Input className="h-12 text-base mt-1" list="purchase-item-categories" value={purchaseForm.itemCategory} onChange={e => setPurchaseForm({ ...purchaseForm, itemCategory: e.target.value })} placeholder="Type or Select..." />
-              <datalist id="purchase-item-categories">{ITEM_CATEGORIES.map(i => <option key={i} value={i} />)}</datalist>
+              <Combobox value={purchaseForm.itemCategory} onChange={val => setPurchaseForm({ ...purchaseForm, itemCategory: val })} options={MAIN_CATEGORIES} placeholder="Type or Select..." />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -1704,6 +1842,28 @@ export function AppContent() {
           </div>
         </div>
       </DialogContent></Dialog>
+
+      {/* Print Hint Dialog */}
+      <Dialog open={showPrintHintDialog} onOpenChange={setShowPrintHintDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Printing Restricted</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-gray-600 dark:text-gray-300">
+              You are currently viewing the application in a preview window where printing is restricted by the browser. 
+            </p>
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <strong className="block mb-2">How to print:</strong>
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Click the <strong>Open in New Tab</strong> button (looks like a square with an arrow) or <strong>Device</strong> button at the top right of this preview window.</li>
+                <li>Once the application opens in a new tab, click the Print button here again, or press <strong>Ctrl + P</strong>.</li>
+              </ol>
+            </div>
+            <Button className="w-full mt-2" onClick={() => setShowPrintHintDialog(false)}>Understood</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConf} onOpenChange={(open) => !open && setDeleteConf(null)}>
