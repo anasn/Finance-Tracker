@@ -5,33 +5,32 @@ import { GoogleGenAI } from "@google/genai";
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+const PORT = 3000;
 
-  app.use(express.json());
+app.use(express.json());
 
-  // Init Gemini
-  let ai: GoogleGenAI | null = null;
-  if (process.env.GEMINI_API_KEY) {
-    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  } else {
-    console.warn("GEMINI_API_KEY environment variable is not set. Voice assistant will fail.");
-  }
+// Init Gemini
+let ai: GoogleGenAI | null = null;
+if (process.env.GEMINI_API_KEY) {
+  ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+} else {
+  console.warn("GEMINI_API_KEY environment variable is not set. Voice assistant will fail.");
+}
 
-  // API Routes
-  app.post("/api/gemini/parse-voice", async (req, res) => {
-    try {
-      if (!ai) {
-        return res.status(500).json({ error: "Gemini API key is not configured" });
-      }
-      
-      const { transcript } = req.body;
-      if (!transcript) {
-        return res.status(400).json({ error: "No transcript provided" });
-      }
+// API Routes
+app.post("/api/gemini/parse-voice", async (req, res) => {
+  try {
+    if (!ai) {
+      return res.status(500).json({ error: "Gemini API key is not configured" });
+    }
+    
+    const { transcript } = req.body;
+    if (!transcript) {
+      return res.status(400).json({ error: "No transcript provided" });
+    }
 
-      const prompt = `You are an AI assistant for a financial tracking app for Landa (used clothing) businesses in Pakistan.
+    const prompt = `You are an AI assistant for a financial tracking app for Landa (used clothing) businesses in Pakistan.
 The user speaks in Urdu, Roman Urdu, or English.
 Analyze the transcript and determine the user's intent to perform a specific action.
 
@@ -72,32 +71,33 @@ Example for missing info:
 }
 `;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json"
-        }
-      });
-      
-      const text = response.text();
-      let parsed = {};
-      try {
-        parsed = JSON.parse(text);
-      } catch (e) {
-        // Fallback cleanup if model still returns backticks
-        const cleanText = text.replace(/^```json/g, "").replace(/```$/g, "").trim();
-        parsed = JSON.parse(cleanText);
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-pro',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
       }
-      
-      res.json(parsed);
-      
-    } catch (e: any) {
-      console.error("Gemini Error:", e);
-      res.status(500).json({ error: e.message || "Failed to process voice command" });
+    });
+    
+    const text = response.text();
+    let parsed = {};
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {
+      // Fallback cleanup if model still returns backticks
+      const cleanText = text.replace(/^```json/g, "").replace(/```$/g, "").trim();
+      parsed = JSON.parse(cleanText);
     }
-  });
+    
+    res.json(parsed);
+    
+  } catch (e: any) {
+    console.error("Gemini Error:", e);
+    res.status(500).json({ error: e.message || "Failed to process voice command" });
+  }
+});
 
+async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -106,16 +106,26 @@ Example for missing info:
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*all', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    // Only serve static files if we're not running on Vercel as a pure API
+    if (!process.env.VERCEL) {
+      const distPath = path.join(process.cwd(), 'dist');
+      app.use(express.static(distPath));
+      app.get('*all', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  // Define how the server listens
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
+// Call startServer to set up the rest
 startServer();
+
+// Export the app for Vercel
+export default app;

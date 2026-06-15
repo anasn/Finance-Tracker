@@ -29,7 +29,7 @@ import {
 import * as store from './store';
 import { migrateLocalStorageToFirestore } from './lib/migration';
 import { auth, googleProvider } from './lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail, signOut, updateProfile, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, sendPasswordResetEmail, signOut, updateProfile, onAuthStateChanged } from 'firebase/auth';
 
 interface Customer { id: string; name: string; phone: string; city: string; address: string; notes: string; totalRemaining: number; totalPaid: number; lastPaymentDate: string | null; createdAt: string; }
 interface StockRecord { id: string; customerId: string; customer?: { name: string; phone: string }; date: string; itemName: string; itemCategory: string; weight: number; weightUnit: string; pricePerUnit: number; totalAmount: number; paidAmount: number; remainingAmount: number; notes: string; createdAt: string; }
@@ -262,10 +262,11 @@ import { VoiceAssistant } from './components/VoiceAssistant';
 export function AppContent() {
   const [darkMode, setDarkMode] = useState(() => {
     const s = localStorage.getItem('fintracker_dark');
-    if (s === 'true') document.documentElement.classList.add('dark');
-    return s === 'true';
+    const isDark = s !== 'false'; // Default to true (dark mode)
+    if (isDark) document.documentElement.classList.add('dark');
+    return isDark;
   });
-  const [language, setLanguage] = useState<Lang>(() => (localStorage.getItem('fintracker_lang') as Lang) || 'ur');
+  const [language, setLanguage] = useState<Lang>(() => (localStorage.getItem('fintracker_lang') as Lang) || 'en');
   const t = useCallback((key: string): string => (tr[key] && tr[key][language]) || key, [language]);
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('fintracker_user'));
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login');
@@ -306,6 +307,23 @@ export function AppContent() {
 
   // Keep Firebase Auth state in sync - re-authenticate if session expires
   useEffect(() => {
+    getRedirectResult(auth).then((result) => {
+      if (result && result.user) {
+        const data = { id: result.user.uid, name: result.user.displayName || 'User', email: result.user.email || '' };
+        setUser(data);
+        localStorage.setItem('fintracker_user', JSON.stringify(data));
+        setIsLoggedIn(true);
+        // The success toast happens later, or we can add it here if it's the target login.
+      }
+    }).catch((error) => {
+      console.error("Redirect auth error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        toast({ title: 'Google Sign In Failed', description: 'Please add this preview URL to your Firebase Console > Authentication > Settings > Authorized Domains list.', variant: 'destructive', duration: 10000 });
+      } else {
+        toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
+      }
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const data = { id: firebaseUser.uid, name: firebaseUser.displayName || 'User', email: firebaseUser.email || '' };
@@ -587,14 +605,23 @@ export function AppContent() {
       localStorage.setItem('fintracker_user', JSON.stringify(data));
       setIsLoggedIn(true);
       toast({ title: t('welcome'), description: `Salam ${data.name}!` });
+      setIsAuthLoading(false);
     } catch (error: any) {
-      if (error.code === 'auth/unauthorized-domain') {
+      if (error.code === 'auth/network-request-failed') {
+        // Fallback to redirect for mobile devices where popup window is blocked or network request fails
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectError: any) {
+          toast({ title: 'Google Sign In Failed', description: redirectError.message, variant: 'destructive' });
+          setIsAuthLoading(false);
+        }
+      } else if (error.code === 'auth/unauthorized-domain') {
          toast({ title: 'Google Sign In Failed', description: 'Please add this preview URL to your Firebase Console > Authentication > Settings > Authorized Domains list.', variant: 'destructive', duration: 10000 });
+         setIsAuthLoading(false);
       } else {
          toast({ title: t('loginFailed'), description: error.message, variant: 'destructive' });
+         setIsAuthLoading(false);
       }
-    } finally {
-      setIsAuthLoading(false);
     }
   };
 
