@@ -1,6 +1,10 @@
 {
   "name": "Finance Tracker",
   "description": "Complete business finance tracker. Manage sales, purchases, customers, payments, expenses, bank records, and invoices.",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

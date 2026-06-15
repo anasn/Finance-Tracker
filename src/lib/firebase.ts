@@ -14,6 +14,7 @@ export const db = initializeFirestore(app, {
   // Use memory cache only - no IndexedDB lock contention
   // This eliminates the 15-20 second delay on writes
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  experimentalForceLongPolling: true
 }, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);

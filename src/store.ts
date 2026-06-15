@@ -11,6 +11,7 @@ import {
   getDoc,
   setDoc,
   Timestamp,
+  onSnapshot
 } from 'firebase/firestore';
 import { db, auth } from './lib/firebase';
 
@@ -192,48 +193,17 @@ export async function getCustomers(userId: string) {
 
   const customers: any[] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  // Fetch all stockRecords and payments for this user to compute totals
-  const [stockSnap, paymentSnap] = await Promise.all([
-    getDocs(query(collection(db, 'stockRecords'), where('userId', '==', userId))),
-    getDocs(query(collection(db, 'payments'), where('userId', '==', userId))),
-  ]);
+  // Background sync for legacy customers missing the pre-calculated fields
+  Promise.all(customers.filter(c => typeof c.totalRemaining === 'undefined').map(async (c) => {
+    try { await syncCustomerLedger(c.id, userId); } catch (e) { console.error('Legacy sync error', e); }
+  })).catch(() => {});
 
-  const allStock: any[] = stockSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const allPayments: any[] = paymentSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-  return customers.map(c => {
-    const cStocks = allStock.filter(s => s.customerId === c.id);
-    const cPayments = allPayments.filter(p => p.customerId === c.id);
-
-    const totalSaleAmount = cStocks.reduce((s: number, r: any) => s + (r.totalAmount || 0), 0);
-    
-    const totalWasooli = cPayments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
-    // Support older records: If a stock has it's downpayment but NO payment record linked to it, we add it. 
-    // This prevents double-counting new records while preserving old ones.
-    const oldStocksWithoutPayments = cStocks.filter((s: any) => {
-      if (cPayments.some((p: any) => p.stockRecordId === s.id)) return false;
-      const sDate = s.date || (s.createdAt ? s.createdAt.split('T')[0] : '');
-      return !cPayments.some((p: any) => {
-        const pDate = p.date || (p.createdAt ? p.createdAt.split('T')[0] : '');
-        return !p.stockRecordId && p.amount === s.paidAmount && pDate === sDate;
-      });
-    });
-    const legacyDownpayments = oldStocksWithoutPayments.reduce((s: number, r: any) => s + (r.paidAmount || 0), 0);
-
-    const totalPaid = totalWasooli + legacyDownpayments;
-    const totalRemaining = Math.max(0, totalSaleAmount - totalPaid);
-
-    const lastPayment = cPayments
-      .filter(p => p.date)
-      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-
-    return {
-      ...c,
-      totalPaid,
-      totalRemaining,
-      lastPaymentDate: lastPayment?.date || null,
-    };
-  });
+  return customers.map(c => ({
+    ...c,
+    totalPaid: typeof c.totalPaid === 'number' ? c.totalPaid : 0,
+    totalRemaining: typeof c.totalRemaining === 'number' ? c.totalRemaining : 0,
+    lastPaymentDate: c.lastPaymentDate || null,
+  }));
 }
 
 export async function createCustomer(data: any) {
@@ -476,19 +446,35 @@ export async function syncCustomerLedger(customerId: string, userId: string) {
   if (!customerId) return;
   const stockQ = query(collection(db, 'stockRecords'), where('userId', '==', userId), where('customerId', '==', customerId));
   const paymentQ = query(collection(db, 'payments'), where('userId', '==', userId), where('customerId', '==', customerId));
+  const invQGlobal = query(collection(db, 'invoices'), where('userId', '==', userId), where('customerId', '==', customerId), where('type', '==', 'sale'));
   
-  const [stockSnap, paymentSnap] = await Promise.all([getDocs(stockQ), getDocs(paymentQ)]);
+  const [stockSnap, paymentSnap, invSnap] = await Promise.all([getDocs(stockQ), getDocs(paymentQ), getDocs(invQGlobal)]);
   
   const stocks = stockSnap.docs.map(d => ({id: d.id, ref: d.ref, ...d.data() as any}))
     .sort((a,b) => new Date(a.date || a.createdAt || '').getTime() - new Date(b.date || b.createdAt || '').getTime());
   
+  const invoicesByRef = new Map();
+  invSnap.docs.forEach(d => invoicesByRef.set(d.data().referenceId, d));
+  
   const totalWasooli = paymentSnap.docs.reduce((sum, d) => sum + (parseFloat(d.data().amount) || 0), 0);
   let remainingWasooli = totalWasooli;
   
-  const batch = writeBatch(db);
+  let batch = writeBatch(db);
+  let opCount = 0;
+
+  const commitBatch = async () => {
+    if (opCount > 0) {
+      await batch.commit();
+      batch = writeBatch(db);
+      opCount = 0;
+    }
+  };
+
+  let totalSaleAmount = 0;
 
   for (const stock of stocks) {
     const totalAmt = parseFloat(stock.totalAmount) || 0;
+    totalSaleAmount += totalAmt;
     let allocatedPaid = 0;
     
     if (remainingWasooli >= totalAmt) {
@@ -503,16 +489,39 @@ export async function syncCustomerLedger(customerId: string, userId: string) {
     
     if (stock.paidAmount !== allocatedPaid || stock.remainingAmount !== allocatedRemaining) {
       batch.update(stock.ref, { paidAmount: allocatedPaid, remainingAmount: allocatedRemaining, updatedAt: now() });
+      opCount++;
+      if (opCount >= 450) await commitBatch();
       
-      const invQ = await getDocs(query(collection(db, 'invoices'), where('referenceId', '==', stock.id), where('type', '==', 'sale')));
-      invQ.docs.forEach(invDoc => {
+      const invDoc = invoicesByRef.get(stock.id);
+      if (invDoc) {
         const status = allocatedRemaining <= 0 ? 'paid' : allocatedPaid > 0 ? 'partial' : 'unpaid';
         batch.update(invDoc.ref, { paidAmount: allocatedPaid, remainingAmount: allocatedRemaining, status, updatedAt: now() });
-      });
+        opCount++;
+        if (opCount >= 450) await commitBatch();
+      }
     }
   }
+
+  // Update customer totals
+  const totalPaid = totalWasooli; // Assuming all payments count towards totalPaid
+  const totalRemaining = Math.max(0, totalSaleAmount - totalPaid);
   
-  await batch.commit();
+  const lastPayment = paymentSnap.docs
+    .map(d => d.data())
+    .filter(p => p.date)
+    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+  const custRef = doc(db, 'customers', customerId);
+  batch.update(custRef, {
+    totalPaid,
+    totalRemaining,
+    totalSaleAmount,
+    lastPaymentDate: lastPayment?.date || null,
+    updatedAt: now()
+  });
+  opCount++;
+  
+  await commitBatch();
 }
 
 // ==================== PAYMENTS ====================
@@ -830,7 +839,8 @@ export async function deleteInvoice(id: string): Promise<void> {
 
 async function _upsertInvoice(referenceId: string, invoiceType: 'sale' | 'purchase' | 'payment' | 'expense', data: any, additionalContext: any = {}) {
   try {
-    const q = query(collection(db, 'invoices'), where('referenceId', '==', referenceId));
+    const userId = data.userId || getUserId();
+    const q = query(collection(db, 'invoices'), where('referenceId', '==', referenceId), where('userId', '==', userId));
     const snap = await getDocs(q);
     
     let partyName = data.partyName || '';
@@ -1029,4 +1039,62 @@ export async function restoreBackup(data: any, userId: string): Promise<boolean>
     console.error('Restore backup error:', e);
     return false;
   }
+}
+
+// ==================== REAL-TIME SUBSCRIPTIONS ====================
+export function subscribeToData(userId: string, callbacks: {
+  onCustomers: (data: any[]) => void,
+  onStock: (data: any[]) => void,
+  onPayments: (data: any[]) => void,
+  onBankPayments: (data: any[]) => void,
+  onExpenses: (data: any[]) => void,
+  onPurchases: (data: any[]) => void,
+  onInvoices: (data: any[]) => void,
+}) {
+  const unsubCustomers = onSnapshot(query(collection(db, 'customers'), where('userId', '==', userId)), (snap) => {
+    const data: any[] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    Promise.all(data.filter(c => typeof c.totalRemaining === 'undefined').map(async (c) => {
+      try { await syncCustomerLedger(c.id, userId); } catch {}
+    })).catch(() => {});
+    callbacks.onCustomers(data.map(c => ({
+      ...c,
+      totalPaid: typeof c.totalPaid === 'number' ? c.totalPaid : 0,
+      totalRemaining: typeof c.totalRemaining === 'number' ? c.totalRemaining : 0,
+      lastPaymentDate: c.lastPaymentDate || null,
+    })));
+  });
+
+  const unsubStock = onSnapshot(query(collection(db, 'stockRecords'), where('userId', '==', userId)), (snap) => {
+    callbacks.onStock(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.date || b.createdAt || '').getTime() - new Date(a.date || a.createdAt || '').getTime()));
+  });
+
+  const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('userId', '==', userId)), (snap) => {
+    callbacks.onPayments(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  });
+
+  const unsubBank = onSnapshot(query(collection(db, 'bankPayments'), where('userId', '==', userId)), (snap) => {
+    callbacks.onBankPayments(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()));
+  });
+
+  const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('userId', '==', userId)), (snap) => {
+    callbacks.onExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  });
+
+  const unsubPurchases = onSnapshot(query(collection(db, 'purchases'), where('userId', '==', userId)), (snap) => {
+    callbacks.onPurchases(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  });
+
+  const unsubInvoices = onSnapshot(query(collection(db, 'invoices'), where('userId', '==', userId)), (snap) => {
+    callbacks.onInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()));
+  });
+
+  return () => {
+    unsubCustomers();
+    unsubStock();
+    unsubPayments();
+    unsubBank();
+    unsubExpenses();
+    unsubPurchases();
+    unsubInvoices();
+  };
 }

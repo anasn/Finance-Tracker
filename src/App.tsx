@@ -257,6 +257,8 @@ function AdminPanel() {
 }
 
 
+import { VoiceAssistant } from './components/VoiceAssistant';
+
 export function AppContent() {
   const [darkMode, setDarkMode] = useState(() => {
     const s = localStorage.getItem('fintracker_dark');
@@ -477,60 +479,48 @@ export function AppContent() {
   }, [language]);
 
   const fetchData = useCallback(async (silent = false) => {
+    // Legacy support for manual triggers like optimistic saves (not needed with onSnapshot, but keeping signature to avoid breaking)
     if (!user) return;
     try {
-      if (!silent) setIsLoading(true);
-      const [
-        fetchedCustomers,
-        fetchedStockRecords,
-        fetchedPayments,
-        fetchedBankPayments,
-        fetchedExpenses,
-        fetchedPurchases,
-        fetchedInvoices,
-        fetchedBranding,
-      ] = await Promise.all([
-        store.getCustomers(user.id),
-        store.getStockRecords(user.id),
-        store.getPayments(user.id),
-        store.getBankPayments(user.id),
-        store.getExpenses(user.id),
-        store.getPurchases(user.id),
-        store.getInvoices(user.id),
-        store.getBranding(user.id),
-      ]);
-      
-      setCustomers(fetchedCustomers as any);
-      setStockRecords(fetchedStockRecords as any);
-      setPayments(fetchedPayments as any);
-      setBankPayments(fetchedBankPayments as any);
-      setExpenses(fetchedExpenses as any);
-      setPurchases(fetchedPurchases as any);
-      setInvoices(fetchedInvoices as any);
+      const fetchedBranding = await store.getBranding(user.id);
       setBranding(fetchedBranding);
       try { localStorage.setItem('fintracker_branding', JSON.stringify(fetchedBranding)); } catch {}
-      
-      const dashboardData = store.computeDashboardData(
-        fetchedCustomers as any,
-        fetchedStockRecords as any,
-        fetchedPayments as any,
-        fetchedExpenses as any,
-        dateFrom,
-        dateTo
-      );
-      setDashboardData(dashboardData);
     } catch (e: any) {
       console.error("Fetch Data Error:", e);
-      toast({ title: t('error'), description: e.message || 'Failed to fetch data.', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
     }
-    checkStorageSize();
-  }, [user, dateFrom, dateTo, checkStorageSize, t]);
+  }, [user]);
 
   useEffect(() => {
-    if (user && hasLicense) fetchData();
-  }, [dateFrom, dateTo, user, hasLicense, fetchData]);
+    if (!user || !hasLicense) return;
+    
+    // Subscribe to all collections
+    const unsub = store.subscribeToData(user.id, {
+      onCustomers: (data) => setCustomers(data as any),
+      onStock: (data) => setStockRecords(data as any),
+      onPayments: (data) => setPayments(data as any),
+      onBankPayments: (data) => setBankPayments(data as any),
+      onExpenses: (data) => setExpenses(data as any),
+      onPurchases: (data) => setPurchases(data as any),
+      onInvoices: (data) => setInvoices(data as any),
+    });
+
+    setIsLoading(false);
+
+    return () => unsub();
+  }, [user, hasLicense]);
+
+  useEffect(() => {
+    if (!user || !hasLicense) return;
+    const computedDashboardData = store.computeDashboardData(
+      customers,
+      stockRecords,
+      payments,
+      expenses,
+      dateFrom,
+      dateTo
+    );
+    setDashboardData(computedDashboardData);
+  }, [customers, stockRecords, payments, expenses, dateFrom, dateTo, user, hasLicense]);
 
   const prevUserRef = useRef<string | null>(null);
   useEffect(() => {
@@ -2172,6 +2162,19 @@ export function AppContent() {
         {activeTab === 'bank' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><Button size="lg" className="w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-700 shadow-xl" onClick={() => { setEditingBankPayment(null); resetBankForm(); setShowBankPaymentDialog(true); }}><Plus className="h-8 w-8" /></Button></motion.div>}
         {activeTab === 'expenses' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><Button size="lg" className="w-16 h-16 rounded-full bg-emerald-600 hover:bg-emerald-700 shadow-xl" onClick={() => { setEditingExpense(null); resetExpenseForm(); setShowExpenseDialog(true); }}><Plus className="h-8 w-8" /></Button></motion.div>}
       </div>
+
+      <VoiceAssistant
+        userId={user?.id || ''}
+        customers={customers}
+        onActionComplete={(msg) => {
+          fetchData();
+        }}
+        onNavigateToTab={(tabId) => {
+          setActiveTab(tabId);
+          setIsSidebarOpen(false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     </div>
   );
 }
