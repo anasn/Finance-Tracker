@@ -61,22 +61,33 @@ export function computeDashboardData(
   const filteredExpenses = expenses.filter(e => filterByDate(e.date || ''));
   const filteredStock = stockRecords.filter(s => filterByDate(s.date || ''));
 
-  const totalMoneyReceived = filteredPayments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
+  const legacyStockWithoutPayments = stockRecords.filter((s: any) => {
+    if (payments.some((p: any) => p.stockRecordId === s.id)) return false;
+    const sDate = s.date || (s.createdAt ? s.createdAt.split('T')[0] : '');
+    return !payments.some((p: any) => {
+      const pDate = p.date || (p.createdAt ? p.createdAt.split('T')[0] : '');
+      return !p.stockRecordId && p.amount === s.paidAmount && pDate === sDate && p.customerId === s.customerId;
+    });
+  });
+  const filteredLegacyStock = legacyStockWithoutPayments.filter((s:any) => filterByDate(s.date || ''));
+  const legacyMoneyReceived = filteredLegacyStock.reduce((s: number, r: any) => s + (r.paidAmount || 0), 0);
+
+  const totalMoneyReceived = filteredPayments.reduce((s: number, p: any) => s + (p.amount || 0), 0) + legacyMoneyReceived;
   const totalRemainingMoney = customers.reduce((s: number, c: any) => s + (c.totalRemaining || 0), 0);
   const totalExpenses = filteredExpenses.reduce((s: number, e: any) => s + (e.amount || 0), 0);
 
   const today = new Date().toISOString().split('T')[0];
+  const legacyTodayReceived = legacyStockWithoutPayments.filter((s:any) => (s.date || '').startsWith(today)).reduce((s: number, r: any) => s + (r.paidAmount || 0), 0);
   const todayWasooli = filteredPayments
     .filter(p => (p.date || '').startsWith(today))
-    .reduce((s: number, p: any) => s + (p.amount || 0), 0);
+    .reduce((s: number, p: any) => s + (p.amount || 0), 0) + legacyTodayReceived;
 
   const now = new Date();
+  const currentMonth = now.toISOString().slice(0, 7);
+  const legacyMonthReceived = legacyStockWithoutPayments.filter(s => (s.date || '').startsWith(currentMonth)).reduce((s: number, r: any) => s + (r.paidAmount || 0), 0);
   const monthWasooli = filteredPayments
-    .filter(p => {
-      const d = new Date(p.date || '');
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    })
-    .reduce((s: number, p: any) => s + (p.amount || 0), 0);
+    .filter(p => (p.date || '').startsWith(currentMonth))
+    .reduce((s: number, p: any) => s + (p.amount || 0), 0) + legacyMonthReceived;
 
   const pendingPayments = customers.filter(c => c.totalRemaining > 0).length;
   const paidPayments = customers.filter(c => c.totalRemaining <= 0 && c.totalPaid > 0).length;
@@ -195,10 +206,21 @@ export async function getCustomers(userId: string) {
     const cPayments = allPayments.filter(p => p.customerId === c.id);
 
     const totalSaleAmount = cStocks.reduce((s: number, r: any) => s + (r.totalAmount || 0), 0);
-    const totalDownpayments = cStocks.reduce((s: number, r: any) => s + (r.paidAmount || 0), 0);
+    
     const totalWasooli = cPayments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
+    // Support older records: If a stock has it's downpayment but NO payment record linked to it, we add it. 
+    // This prevents double-counting new records while preserving old ones.
+    const oldStocksWithoutPayments = cStocks.filter((s: any) => {
+      if (cPayments.some((p: any) => p.stockRecordId === s.id)) return false;
+      const sDate = s.date || (s.createdAt ? s.createdAt.split('T')[0] : '');
+      return !cPayments.some((p: any) => {
+        const pDate = p.date || (p.createdAt ? p.createdAt.split('T')[0] : '');
+        return !p.stockRecordId && p.amount === s.paidAmount && pDate === sDate;
+      });
+    });
+    const legacyDownpayments = oldStocksWithoutPayments.reduce((s: number, r: any) => s + (r.paidAmount || 0), 0);
 
-    const totalPaid = totalDownpayments + totalWasooli;
+    const totalPaid = totalWasooli + legacyDownpayments;
     const totalRemaining = Math.max(0, totalSaleAmount - totalPaid);
 
     const lastPayment = cPayments
@@ -401,6 +423,10 @@ export async function createStockRecord(data: any) {
 
   await batch.commit();
 
+  if (docData.customerId) {
+    await syncCustomerLedger(docData.customerId, userId);
+  }
+
   return { id: stockRecordId, ...docData };
 }
 
@@ -414,17 +440,78 @@ export async function updateStockRecord(id: string, data: any) {
   await updateDoc(ref, updateData);
 
   // Update related invoice
-  await _updateInvoiceForRecord(id, updateData);
+  await _upsertInvoice(id, 'sale', updateData);
+
+  if (data.customerId) {
+    await syncCustomerLedger(data.customerId, getUserId() || data.userId || '');
+  }
 }
 
 export async function deleteStockRecord(id: string): Promise<void> {
+  const uid = getUserId();
+  const docRef = doc(db, 'stockRecords', id);
+  const snap = await getDoc(docRef);
+  let customerId = '';
+  let userId = '';
+  if (snap.exists()) {
+    customerId = snap.data().customerId;
+    userId = snap.data().userId;
+  }
+
   const batch = writeBatch(db);
-  batch.delete(doc(db, 'stockRecords', id));
+  batch.delete(docRef);
 
   // Also delete related invoices
-  const invQ = await getDocs(query(collection(db, 'invoices'), where('referenceId', '==', id)));
+  const invQ = await getDocs(query(collection(db, 'invoices'), where('referenceId', '==', id), where('userId', '==', uid)));
   invQ.docs.forEach(d => batch.delete(d.ref));
 
+  await batch.commit();
+  
+  if (customerId) {
+    await syncCustomerLedger(customerId, userId);
+  }
+}
+
+export async function syncCustomerLedger(customerId: string, userId: string) {
+  if (!customerId) return;
+  const stockQ = query(collection(db, 'stockRecords'), where('userId', '==', userId), where('customerId', '==', customerId));
+  const paymentQ = query(collection(db, 'payments'), where('userId', '==', userId), where('customerId', '==', customerId));
+  
+  const [stockSnap, paymentSnap] = await Promise.all([getDocs(stockQ), getDocs(paymentQ)]);
+  
+  const stocks = stockSnap.docs.map(d => ({id: d.id, ref: d.ref, ...d.data() as any}))
+    .sort((a,b) => new Date(a.date || a.createdAt || '').getTime() - new Date(b.date || b.createdAt || '').getTime());
+  
+  const totalWasooli = paymentSnap.docs.reduce((sum, d) => sum + (parseFloat(d.data().amount) || 0), 0);
+  let remainingWasooli = totalWasooli;
+  
+  const batch = writeBatch(db);
+
+  for (const stock of stocks) {
+    const totalAmt = parseFloat(stock.totalAmount) || 0;
+    let allocatedPaid = 0;
+    
+    if (remainingWasooli >= totalAmt) {
+      allocatedPaid = totalAmt;
+      remainingWasooli -= totalAmt;
+    } else {
+      allocatedPaid = remainingWasooli;
+      remainingWasooli = 0;
+    }
+    
+    const allocatedRemaining = Math.max(0, totalAmt - allocatedPaid);
+    
+    if (stock.paidAmount !== allocatedPaid || stock.remainingAmount !== allocatedRemaining) {
+      batch.update(stock.ref, { paidAmount: allocatedPaid, remainingAmount: allocatedRemaining, updatedAt: now() });
+      
+      const invQ = await getDocs(query(collection(db, 'invoices'), where('referenceId', '==', stock.id), where('type', '==', 'sale')));
+      invQ.docs.forEach(invDoc => {
+        const status = allocatedRemaining <= 0 ? 'paid' : allocatedPaid > 0 ? 'partial' : 'unpaid';
+        batch.update(invDoc.ref, { paidAmount: allocatedPaid, remainingAmount: allocatedRemaining, status, updatedAt: now() });
+      });
+    }
+  }
+  
   await batch.commit();
 }
 
@@ -485,16 +572,31 @@ export async function createPayment(data: any) {
 
   await batch.commit();
 
+  await _upsertInvoice(paymentId, 'payment', docData);
+
+  await syncCustomerLedger(data.customerId, userId);
+
   return { id: paymentId, ...docData };
 }
 
 export async function updatePayment(id: string, data: any) {
   const ref = doc(db, 'payments', id);
-  await updateDoc(ref, { ...data, updatedAt: now() });
+  const updateData = { ...data, updatedAt: now() };
+  await updateDoc(ref, updateData);
+  await _upsertInvoice(id, 'payment', updateData);
+  await syncCustomerLedger(data.customerId, getUserId() || data.userId || '');
 }
 
 export async function deletePayment(id: string): Promise<void> {
-  await deleteDoc(doc(db, 'payments', id));
+  const docRef = doc(db, 'payments', id);
+  const snap = await getDoc(docRef);
+  if (snap.exists()) {
+    const data = snap.data();
+    await deleteDoc(docRef);
+    await syncCustomerLedger(data.customerId, data.userId);
+  } else {
+    await deleteDoc(docRef);
+  }
 }
 
 // ==================== BANK PAYMENTS ====================
@@ -582,12 +684,15 @@ export async function createExpense(data: any) {
   }
 
   await batch.commit();
+  await _upsertInvoice(expenseId, 'expense', docData);
   return { id: expenseId, ...docData };
 }
 
 export async function updateExpense(id: string, data: any) {
   const ref = doc(db, 'expenses', id);
-  await updateDoc(ref, { ...data, updatedAt: now() });
+  const updateData = { ...data, updatedAt: now() };
+  await updateDoc(ref, updateData);
+  await _upsertInvoice(id, 'expense', updateData);
 }
 
 export async function deleteExpense(id: string): Promise<void> {
@@ -702,7 +807,7 @@ export async function updatePurchase(id: string, data: any) {
   const updateData = { ...data, totalAmount, paidAmount, remainingAmount, updatedAt: now() };
   await updateDoc(ref, updateData);
   
-  await _updateInvoiceForRecord(id, updateData);
+  await _upsertInvoice(id, 'purchase', updateData);
 }
 
 export async function deletePurchase(id: string): Promise<void> {
@@ -723,89 +828,68 @@ export async function deleteInvoice(id: string): Promise<void> {
   await deleteDoc(doc(db, 'invoices', id));
 }
 
-async function _createInvoiceForStock(stockRecord: any) {
-  try {
-    const userId = getUserId() || stockRecord.userId;
-
-    // Get customer info
-    let partyName = '', partyPhone = '', partyCity = '';
-    if (stockRecord.customerId) {
-      const custDoc = await getDoc(doc(db, 'customers', stockRecord.customerId));
-      if (custDoc.exists()) {
-        const c = custDoc.data() as any;
-        partyName = c.name || '';
-        partyPhone = c.phone || '';
-        partyCity = c.city || '';
-      }
-    }
-
-    const totalAmount = parseFloat(stockRecord.totalAmount) || 0;
-    const paidAmount = parseFloat(stockRecord.paidAmount) || 0;
-    const remainingAmount = Math.max(0, totalAmount - paidAmount);
-
-    const status = remainingAmount <= 0 ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid';
-    const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
-
-    const invoiceData = {
-      userId,
-      invoiceNumber,
-      type: 'sale',
-      referenceId: stockRecord.id,
-      partyName,
-      partyPhone,
-      partyCity,
-      itemName: stockRecord.itemName || '',
-      itemCategory: stockRecord.itemCategory || '',
-      weight: stockRecord.weight || 0,
-      weightUnit: stockRecord.weightUnit || 'KG',
-      pricePerUnit: stockRecord.pricePerUnit || 0,
-      totalAmount,
-      paidAmount,
-      remainingAmount,
-      status,
-      notes: stockRecord.notes || '',
-      date: stockRecord.date || new Date().toISOString().split('T')[0],
-      createdAt: now(),
-      updatedAt: now(),
-    };
-
-    await addDoc(collection(db, 'invoices'), invoiceData);
-  } catch (e) {
-    console.error('Failed to create invoice for stock:', e);
-    // Don't throw - invoice creation is secondary
-  }
-}
-
-async function _updateInvoiceForRecord(referenceId: string, data: any) {
+async function _upsertInvoice(referenceId: string, invoiceType: 'sale' | 'purchase' | 'payment' | 'expense', data: any, additionalContext: any = {}) {
   try {
     const q = query(collection(db, 'invoices'), where('referenceId', '==', referenceId));
     const snap = await getDocs(q);
-    if (snap.empty) return;
+    
+    let partyName = data.partyName || '';
+    let partyPhone = data.partyPhone || '';
 
-    const totalAmount = parseFloat(data.totalAmount) || 0;
-    const paidAmount = parseFloat(data.paidAmount) || 0;
+    // Dynamically fetch customer details if needed
+    if (!partyName && data.customerId) {
+        const custDoc = await getDoc(doc(db, 'customers', data.customerId));
+        if (custDoc.exists()) {
+            const c = custDoc.data() as any;
+            partyName = c.name || '';
+            partyPhone = c.phone || '';
+        }
+    }
+
+    const totalAmount = parseFloat(data.totalAmount) || parseFloat(data.amount) || 0;
+    const paidAmount = parseFloat(data.paidAmount) || (['payment', 'expense'].includes(invoiceType) ? totalAmount : 0);
     const remainingAmount = Math.max(0, totalAmount - paidAmount);
     const status = remainingAmount <= 0 ? 'paid' : paidAmount > 0 ? 'partial' : 'unpaid';
 
-    const batch = writeBatch(db);
-    snap.docs.forEach(d => {
-      batch.update(d.ref, {
+    let itemName = data.itemName || data.transactionNote || data.description || '';
+    
+    const invoiceRecord = {
+        userId: data.userId || getUserId(),
+        type: invoiceType,
+        referenceId,
+        partyName: partyName || data.supplierName || data.category || '',
+        partyPhone: partyPhone || data.supplierPhone || '',
+        partyCity: data.partyCity || data.supplierCity || '',
+        itemName,
+        itemCategory: data.itemCategory || data.paymentMethod || data.category || '',
+        weight: data.weight || 0,
+        weightUnit: data.weightUnit || 'KG',
+        pricePerUnit: data.pricePerUnit || 0,
         totalAmount,
         paidAmount,
         remainingAmount,
         status,
-        itemName: data.itemName || '',
-        itemCategory: data.itemCategory || '',
-        weight: data.weight || 0,
-        weightUnit: data.weightUnit || 'KG',
-        pricePerUnit: data.pricePerUnit || 0,
         notes: data.notes || '',
+        date: data.date || new Date().toISOString().split('T')[0],
         updatedAt: now(),
-      });
+    };
+
+    if (snap.empty) {
+        // Create new
+        const prefix = invoiceType === 'payment' ? 'REC' : invoiceType === 'expense' ? 'EXP' : invoiceType === 'purchase' ? 'PINV' : 'INV';
+        const invoiceNumber = `${prefix}-${Date.now().toString(36).toUpperCase()}`;
+        await addDoc(collection(db, 'invoices'), { ...invoiceRecord, invoiceNumber, createdAt: now() });
+        return;
+    }
+
+    // Update existing
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => {
+        batch.update(d.ref, invoiceRecord);
     });
     await batch.commit();
   } catch (e) {
-    console.error('Failed to update invoice:', e);
+    console.error(`Failed to upsert invoice for ${invoiceType}:`, e);
   }
 }
 
